@@ -46,15 +46,36 @@ export const metadata: Metadata = {
     'cannabis social club South Africa',
   ],
   alternates: { canonical: '/' },
+  /**
+   * Share card is JPEG, deliberately. WhatsApp — the client's main sharing
+   * channel — does not reliably render WebP link previews, and a WebP og:image
+   * degrades silently to a text-only preview with no picture at all.
+   * `type` is declared explicitly because some scrapers will not sniff it.
+   */
   openGraph: {
     title: 'The Roach — Private Cannabis Club in Knysna',
     description:
       'A private cannabis collective on the Garden Route. Fifteen years of organic craft. Members only, 18+.',
     url: brand.url,
     siteName: brand.name,
-    images: [{ url: '/img/og.webp', width: 1200, height: 630 }],
+    images: [
+      {
+        url: '/img/og.jpg',
+        width: 1200,
+        height: 630,
+        type: 'image/jpeg',
+        alt: 'The Roach — crafted for the collective. Knysna, Garden Route.',
+      },
+    ],
     locale: 'en_ZA',
     type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The Roach — Private Cannabis Club in Knysna',
+    description:
+      'A private cannabis collective on the Garden Route. Fifteen years of organic craft. Members only, 18+.',
+    images: ['/img/og.jpg'],
   },
   robots: { index: true, follow: true },
 };

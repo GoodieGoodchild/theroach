@@ -117,11 +117,64 @@ for (const { file, name, widths, trim } of MAP) {
 await sharp(join(SRC, 'TheroachLogo.png')).resize(512, 512).png().toFile('src/app/icon.png');
 console.log('favicon  → src/app/icon.png');
 
-// OG card — social platforms composite on white, so flatten onto our ink.
-await sharp(join(SRC, 'TheRoachLogo2.png'))
-  .resize({ width: 940, height: 630, fit: 'contain', background: '#000000' })
-  .extend({ left: 130, right: 130, background: '#000000' })
-  .flatten({ background: '#000000' }) // matches --color-ink exactly
-  .webp({ quality: 88 })
-  .toFile(join(OUT, 'og.webp'));
-console.log('og card  → public/img/og.webp (1200x630)');
+/**
+ * ── SHARE CARD (Open Graph / WhatsApp / LinkedIn / X) ────────────────────────
+ *
+ * JPEG, NOT WebP. This matters: WhatsApp — the client's main sharing channel —
+ * does not reliably render WebP link previews, and nor do several other
+ * platforms. A WebP og:image silently degrades to a bare text preview with no
+ * picture, which is the opposite of the "professional looking link" this is for.
+ * JPEG is understood everywhere. Do not "optimise" this back to WebP.
+ *
+ * Composition: the full lockup centred on black with generous margin rather
+ * than filling the frame. Platforms crop this card to very different aspect
+ * ratios — WhatsApp near-square, LinkedIn 1.91:1, X 2:1 — and a centred mark
+ * with padding survives all of them. A horizontal layout loses the wordmark to
+ * the first tight crop.
+ *
+ * Kept well under ~300KB, roughly where WhatsApp gives up fetching a preview.
+ */
+const OG_W = 1200;
+const OG_H = 630;
+const OG_MARK = 500; // height of the ARTWORK itself, after trimming its padding
+
+// Trim first. The source carries a lot of black padding, so resizing it whole
+// leaves the mark looking lost in the frame — noticeably weak at the thumbnail
+// size WhatsApp renders. Keying the black out lets us measure and place the
+// artwork rather than the plate, then flatten straight back onto black.
+const lockup = await sharp(
+  await sharp(join(SRC, 'TheRoachLogo2.png')).ensureAlpha().toBuffer(),
+)
+  .trim({ threshold: 18 })
+  .resize({ height: OG_MARK, fit: 'inside', withoutEnlargement: false })
+  .toBuffer();
+
+const lm = await sharp(lockup).metadata();
+// Guard the square crop. WhatsApp often shows a centred square, so anything
+// wider than OG_H would have its edges cut off.
+if (lm.width > OG_H - 40) {
+  console.warn(
+    `  note: lockup is ${lm.width}px wide; a centred square crop shows only ${OG_H}px ` +
+      '— reduce OG_MARK if the wordmark gets clipped.',
+  );
+}
+
+await sharp({
+  create: {
+    width: OG_W,
+    height: OG_H,
+    channels: 3,
+    // Pure black — the artwork's own plate is #000, so any other value draws a
+    // visible rectangle around the logo in the preview.
+    background: { r: 0, g: 0, b: 0 },
+  },
+})
+  .composite([{ input: lockup, gravity: 'centre' }])
+  .jpeg({ quality: 90, chromaSubsampling: '4:4:4', mozjpeg: true })
+  .toFile(join(OUT, 'og.jpg'));
+
+const ogSize = (await stat(join(OUT, 'og.jpg'))).size;
+console.log(
+  `share card -> public/img/og.jpg (${OG_W}x${OG_H}, ${(ogSize / 1024).toFixed(0)}KB)` +
+    (ogSize > 300 * 1024 ? '   WARNING: over 300KB, WhatsApp may skip it' : ''),
+);
