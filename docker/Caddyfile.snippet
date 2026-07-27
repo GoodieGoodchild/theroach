@@ -1,0 +1,56 @@
+# The Roach — add this to your existing Caddyfile.
+#
+# Caddy already owns :80 and :443 on this server and provisions TLS
+# automatically, so this is all that is needed. Do NOT add a separate cert
+# workflow — Caddy will get a Let's Encrypt certificate for both names on the
+# first request, provided the DNS points here (see the note at the bottom).
+
+theroach.co.za, www.theroach.co.za {
+	reverse_proxy theroach:80
+}
+
+# ─── WHY THAT IS THE WHOLE CONFIG ────────────────────────────────────────────
+#
+# Everything else is already handled INSIDE the container by docker/nginx.conf:
+#
+#   · 410 Gone for the old WooCommerce paths — /shop/, /product-category/,
+#     /product/, /brand/, /cannarootz/, cart/checkout/account, wp-*.
+#     These are the whole reason to deploy quickly: Google still has those URLs
+#     indexed, and every crawl that hits a 404 instead of a 410 drops another
+#     one, taking the domain's legacy authority with it.
+#   · 301 for /contact-us-the-roach/ — the one old URL whose intent continues.
+#   · canonical redirect from theroach.co.za to www.theroach.co.za.
+#
+# Caddy passes the original Host header through by default, so the container's
+# canonical redirect sees the real hostname and behaves correctly.
+#
+# If you would rather Caddy answer the 410s itself (marginally faster, and they
+# never touch the container), use this instead:
+#
+#   theroach.co.za, www.theroach.co.za {
+#       @gone path /shop* /product-category* /product* /brand* /cannarootz* \
+#                  /cart* /checkout* /my-account* /wp-*
+#       respond @gone 410
+#       redir /contact-us-the-roach/ https://www.theroach.co.za/ permanent
+#       reverse_proxy theroach:80
+#   }
+#
+# Keep ONE of these as the source of truth. Two copies of a redirect map drift.
+
+# ─── ⚠️ THIS WILL NOT WORK UNTIL DNS IS FIXED ────────────────────────────────
+#
+# theroach.co.za currently resolves to 41.203.18.177, which is xneelo shared
+# hosting — it answers "Server: Apache" and has every mail port closed, while
+# this box runs Caddy and mailcow. The domain does not point here yet.
+#
+# Get this server's real public IP:
+#     curl -4 ifconfig.me
+#
+# Then in the xneelo DNS panel (Manage DNS -> theroach.co.za), change the A
+# records for @ and www to that IP.
+#
+# Leave the `mail` A record alone if mailcow serves other domains from the same
+# IP — check before touching it, because changing it will break mail delivery.
+#
+# Until the A records change, Caddy cannot complete the ACME HTTP-01 challenge,
+# so it cannot issue a certificate, and the site stays unreachable.

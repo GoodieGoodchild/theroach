@@ -1,14 +1,16 @@
-# The Roach — container for the static site.
+# The Roach — static site container, fronted by Caddy.
 #
-# PORT MAPPING: "3010:80"
-#   Host 3010 -> container 80. The container serves nginx on 80 (see Dockerfile:
-#   the site is a static export, so stage 2 is nginx:alpine — there is no Node
-#   process at runtime). So map to :80, NOT :3000 — nothing listens on 3000.
+# THIS SERVER (observed 2026-07-27):
+#   · caddy:2.10 owns 0.0.0.0:80 and 0.0.0.0:443 — it is the reverse proxy and
+#     it provisions TLS automatically. Nothing else may bind those ports.
+#   · mailcow runs the mail stack (25/465/587/110/143/993/995).
+#   · webuild is on 8090, mailcow's UI on 8080/8443.
+#   · a shared docker network named `web` exists — that is how Caddy reaches
+#     app containers by name.
 #
-#   Ports 80 and 443 on this host are already held by Apache (probed 2026-07-27:
-#   it serves the xneelo placeholder and answers TLS with xneelo's own
-#   *.jnb2.host-h.net wildcard), so the container cannot take them. 3010 sits
-#   behind whatever proxies for you.
+# So this container does NOT publish 80. It joins `web`, and Caddy proxies to it
+# as `theroach:80`. The site is a static export served by nginx inside the
+# container (see Dockerfile — there is no Node at runtime, nothing on :3000).
 
 services:
   theroach:
@@ -16,13 +18,16 @@ services:
     container_name: theroach
     restart: unless-stopped
 
+    networks:
+      # Caddy must share a network with this container to resolve `theroach`.
+      - web
+
+    # 3010 is published only so you can curl the container directly while
+    # debugging, bypassing Caddy. Bound to LOCALHOST so it is not reachable from
+    # the internet — otherwise people could hit the site on :3010 and skip your
+    # TLS and the 410 redirects entirely. Delete this block once Caddy is live.
     ports:
-      # If your reverse proxy runs on THIS host, prefer "127.0.0.1:3010:80" —
-      # Docker publishes straight past the host firewall, so the bare form makes
-      # 3010 reachable from the internet and lets people bypass your TLS and the
-      # 410 redirects by hitting the port directly. Left open here because a
-      # proxy in another container or on another host needs to reach it.
-      - "3010:80"
+      - "127.0.0.1:3010:80"
 
     # Static files only — nothing to persist, nothing writable.
     read_only: true
@@ -46,3 +51,9 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+networks:
+  web:
+    # Created already by whatever brought Caddy up — do not let compose make a
+    # second one, or Caddy will not be able to resolve `theroach`.
+    external: true
