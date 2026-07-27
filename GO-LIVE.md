@@ -1,5 +1,25 @@
 # Go live on xneelo — theroach.co.za
 
+## Which xneelo product is this?
+
+Checked live: `theroach.co.za` → `41.203.18.177`, `Server: Apache`, serving the
+xneelo "Reserved for" default page. **That is standard xneelo Web Hosting
+(konsoleH) — shared hosting, which does NOT run Docker.**
+
+So the Dockerfile in this repo applies only if you have a separate xneelo **Cloud
+Server** and repoint the domain's A record at it. Two viable paths:
+
+| Path | What it is | Effort |
+|---|---|---|
+| **A. Upload to shared hosting** ← recommended now | Upload `out/` to `public_html`. Apache reads `.htaccess`, so the 410s work. | 20 min |
+| **B. Cloud Server + Docker** | Build the image, run it, repoint DNS. `docker/nginx.conf` has the redirects. | Hours + monthly cost |
+
+Path A gets the 404 bleed stopped today and costs nothing extra. You can move to
+B later without changing the site — the build output is identical either way.
+
+Everything below is **Path A**.
+
+
 Everything is built and packaged. **`theroach-upload.zip` (1.5MB, 66 files)** is
 the whole site. Roughly 20 minutes end to end.
 

@@ -214,6 +214,22 @@ export const sections: Section[] = [
           </a>
         </Stagger>
 
+        {/* Internal link to the PotCast. The site had ZERO internal links before
+            this — an orphaned page cannot be crawled or ranked, and the podcast
+            is the property's only real content engine. */}
+        <Stagger delay={0.46}>
+          <p className="mt-12 text-base font-light leading-relaxed text-bone/70">
+            We also make a podcast about all of this —{' '}
+            <a
+              href="/potcast/"
+              className="text-gold-lit underline-offset-4 outline-none hover:underline focus-visible:underline"
+            >
+              PotCast, Bra met ’n Bek
+            </a>
+            . Late-night thoughts, real conversations, raw truth. New episodes weekly.
+          </p>
+        </Stagger>
+
         <Stagger delay={0.5}>
           <div className="mt-14 flex flex-col items-center gap-5">
             <img
