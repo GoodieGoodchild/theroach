@@ -1,0 +1,6 @@
+# Never upload the client's source artwork to a third party.
+# logoassets/ contains TheRoachPricing.png — the private WhatsApp pricelist.
+# The published site only needs the derived files already in public/.
+logoassets
+out
+.next

@@ -1,0 +1,228 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Pure black, deliberately — NOT a warm off-black.
+     The video plate and every brand PNG are rgb(0,0,0). At #050403 the page sat
+     5 values lighter, which drew a visible rectangle around the hero video and
+     made it read as pasted on. Matching exactly makes the letterbox disappear.
+     Don't "warm this up". */
+  --color-ink: #000000;
+  --color-ink-2: #0b0906;
+  --color-ink-3: #12100b;
+  --color-gold: #d3aa6a;
+  --color-gold-lit: #ecd2a2;
+  --color-gold-deep: #8a6a35;
+  --color-ember: #ff7a2e;
+  --color-ember-deep: #c94f14;
+  --color-bone: #efe9dd;
+
+  --font-display: var(--font-montserrat);
+  --font-serif: var(--font-cormorant);
+  --font-body: var(--font-jost);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  background: var(--color-ink);
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-ink);
+  color: var(--color-bone);
+  -webkit-font-smoothing: antialiased;
+  /* `clip`, never `hidden`: overflow-x hidden on body silently converts the body
+     into the scroll container and breaks document scrolling. Learned the hard way. */
+  overflow-x: clip;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Champagne foil for display type ─────────────────────────── */
+.foil {
+  background: linear-gradient(
+    100deg,
+    #8a6a35 0%,
+    #d3aa6a 18%,
+    #f4e3bc 36%,
+    #ecd2a2 50%,
+    #f4e3bc 62%,
+    #d3aa6a 80%,
+    #8a6a35 100%
+  );
+  background-size: 240% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: foil 9s ease-in-out infinite;
+
+  /* DESCENDER CLIPPING — do not remove.
+     With `background-clip: text` the glyphs are painted BY the background, so
+     anything falling outside the background box is simply not drawn. Tailwind
+     defaults text-5xl/7xl to `line-height: 1`, which left the tails of g, y, p
+     and j 3–4px outside the box — they vanished rather than overflowed.
+     Extra leading raises the box by half the increase (half-leading is split
+     top and bottom); the padding adds the remainder outright. */
+  line-height: 1.2;
+  padding-bottom: 0.1em;
+}
+@keyframes foil {
+  0%,
+  100% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+}
+
+/* ── Smoke wisps (pure CSS, spans animated up with blur) ─────── */
+@keyframes wisp {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.6);
+    opacity: 0;
+  }
+  12% {
+    opacity: var(--wisp-peak, 0.4);
+  }
+  100% {
+    transform: translate3d(var(--wisp-drift, 14px), -46vh, 0) scale(2.6);
+    opacity: 0;
+  }
+}
+.wisp {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, rgba(236, 226, 210, 0.55), transparent 70%);
+  filter: blur(10px);
+  will-change: transform, opacity;
+  animation: wisp var(--wisp-dur, 8s) ease-out var(--wisp-delay, 0s) infinite;
+}
+
+/* ── Ember pulse behind the burning tip ──────────────────────── */
+@keyframes ember {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.35);
+  }
+}
+.ember {
+  animation: ember 3.2s ease-in-out infinite;
+}
+
+/* ── Marquee ─────────────────────────────────────────────────── */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee {
+  animation: marquee 42s linear infinite;
+}
+
+/* ── Slow breathing (landing mark) ───────────────────────────── */
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+.breathe {
+  animation: breathe 7s ease-in-out infinite;
+}
+
+/* ── Hint pulse ──────────────────────────────────────────────── */
+@keyframes hint {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+.hint-pulse {
+  animation: hint 3.4s ease-in-out infinite;
+}
+
+/* Square stage for the hero video. Sized so the mark plus the hint block below
+   it always fit the viewport: the column needs stage + ~98px of hint, gap and
+   padding, so 78svh only fits when the viewport is taller than ~445px. Landscape
+   phones (~390px) and short windows get a smaller share instead of a clipped hint. */
+.stage {
+  width: min(100vw, 78svh);
+  height: min(100vw, 78svh);
+}
+@media (max-height: 500px) {
+  .stage {
+    width: min(100vw, 60svh);
+    height: min(100vw, 60svh);
+  }
+}
+
+/* Wordmark overlay on the hero video. Placed in the dead black band beneath the
+   burning ember (video content occupies y 33–82% of the square frame), so the
+   joint is never covered. Scales up on narrow screens to stay legible. */
+.wm {
+  left: 18%;
+  width: 64%;
+  top: 84.5%;
+}
+@media (min-width: 640px) {
+  .wm {
+    left: 23%;
+    width: 54%;
+  }
+}
+
+.rule-gold {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+}
+
+.hairline {
+  border-color: color-mix(in srgb, var(--color-gold) 22%, transparent);
+}
+
+/* Film grain over everything */
+.grain::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0.11;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection {
+  background: var(--color-gold);
+  color: var(--color-ink);
+}

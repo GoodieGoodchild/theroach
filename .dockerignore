@@ -1,0 +1,15 @@
+# Keep the build context small and the image clean.
+node_modules
+.next
+out
+.git
+.vercel
+theroach-upload.zip
+*.md
+
+# NEVER let the client's private pricelist into a build context or image layer.
+# Belt and braces alongside .gitignore — a build context is assembled from the
+# working directory, so an untracked file would still be sent to the daemon.
+logoassets/TheRoachPricing.png
+logoassets/*[Pp]ricing*
+logoassets/*[Pp]rice*

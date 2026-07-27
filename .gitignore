@@ -1,0 +1,40 @@
+node_modules/
+.next/
+out/
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+
+.vercel
+
+# Local deploy bundle — rebuilt by `npm run build` + zip, never source of truth.
+theroach-upload.zip
+
+# ─────────────────────────────────────────────────────────────────────────────
+# THE CLIENT'S PRIVATE PRICELIST — NEVER COMMIT
+#
+# TheRoachPricing.png is material for private 1:1 WhatsApp conversations. The
+# entire compliance architecture of this site rests on prices existing ONLY in
+# that private channel: the CfPPA folds "advertise for sale" into "deal in"
+# (up to 10 years). A public price list published under the client's name is the
+# exact artefact we have spent this build keeping off the internet.
+#
+# GitHub is not private by default, repos get forked, and code search indexes
+# blobs. Committing it once puts it in the history permanently — removing it
+# later needs a history rewrite, and any fork keeps its copy.
+#
+# The build does NOT need it: `npm run images` allowlists sources explicitly and
+# has never touched this file, and scripts/guard-pricing.mjs fails the build if
+# it ever appears in public/ or out/.
+# ─────────────────────────────────────────────────────────────────────────────
+logoassets/TheRoachPricing.png
+logoassets/*[Pp]ricing*
+logoassets/*[Pp]rice*
+
+# Superseded video sources (~6.7MB). roachsmokejoint.mp4 is the live one; these
+# are kept locally but not worth carrying in git history.
+logoassets/theroach.mp4
+logoassets/roachjoint.mp4
