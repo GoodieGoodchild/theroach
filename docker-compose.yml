@@ -1,39 +1,30 @@
 # The Roach — container for the static site.
 #
-# ── WHY PORT 8080 AND NOT 80 ──────────────────────────────────────────────────
-# Probed 41.203.18.177 (2026-07-27): ports 80 AND 443 are both already held by
-# Apache — it is serving the xneelo placeholder, and answering TLS with xneelo's
-# own *.jnb2.host-h.net wildcard. Binding this container to 80 would collide and
-# the container would fail to start.
+# PORT MAPPING: "3010:80"
+#   Host 3010 -> container 80. The container serves nginx on 80 (see Dockerfile:
+#   the site is a static export, so stage 2 is nginx:alpine — there is no Node
+#   process at runtime). So map to :80, NOT :3000 — nothing listens on 3000.
 #
-# So the container listens on 8080, bound to LOCALHOST ONLY (127.0.0.1), and
-# Apache reverse-proxies to it. That means:
-#   · nothing new is exposed to the internet — only Apache faces outward
-#   · Apache keeps handling TLS, so the Let's Encrypt cert lives in one place
-#   · you never have to stop Apache, which on this box may also be fronting
-#     webmail or other vhosts you would not want to take down
-#
-# If you would rather the container own the ports directly, stop Apache first
-# (`systemctl stop apache2 && systemctl disable apache2`), change the mapping to
-# "80:80", and move TLS into the container — but then certificate renewal
-# becomes your problem, and Apache already solves it.
+#   Ports 80 and 443 on this host are already held by Apache (probed 2026-07-27:
+#   it serves the xneelo placeholder and answers TLS with xneelo's own
+#   *.jnb2.host-h.net wildcard), so the container cannot take them. 3010 sits
+#   behind whatever proxies for you.
 
 services:
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: theroach:latest
+  theroach:
+    build: .
     container_name: theroach
     restart: unless-stopped
 
-    # 127.0.0.1 prefix is deliberate — without it Docker punches a hole straight
-    # through the host firewall and 8080 becomes publicly reachable, bypassing
-    # Apache, TLS and the redirects entirely.
     ports:
-      - "127.0.0.1:8080:80"
+      # If your reverse proxy runs on THIS host, prefer "127.0.0.1:3010:80" —
+      # Docker publishes straight past the host firewall, so the bare form makes
+      # 3010 reachable from the internet and lets people bypass your TLS and the
+      # 410 redirects by hitting the port directly. Left open here because a
+      # proxy in another container or on another host needs to reach it.
+      - "3010:80"
 
-    # Static files only. Nothing to persist, nothing to mount.
+    # Static files only — nothing to persist, nothing writable.
     read_only: true
     tmpfs:
       - /tmp
