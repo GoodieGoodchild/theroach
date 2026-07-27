@@ -6,7 +6,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "dev": "next dev -p 5193",
-    "prebuild": "node scripts/guard-pricing.mjs",
+    "prebuild": "node scripts/guard-pricing.mjs && node scripts/gen-sitemap.mjs",
     "build": "next build",
     "postbuild": "node scripts/guard-pricing.mjs",
     "start": "next start",
