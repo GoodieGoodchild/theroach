@@ -134,6 +134,39 @@ console.log('favicon  → src/app/icon.png');
  *
  * Kept well under ~300KB, roughly where WhatsApp gives up fetching a preview.
  */
+/**
+ * ── SHOP STOREFRONTS ─────────────────────────────────────────────────────────
+ *
+ * One render contains BOTH windows side by side, so split it down the middle.
+ * The signage and CTA are baked into the render (the original brief called for
+ * empty sign boards with HTML neon on top, but this render has clean, legible
+ * lettering — no AI garbling — so it is better used as-is than fought with).
+ *
+ * The "shop turns on" effect therefore comes from lighting the whole panel in
+ * CSS rather than from overlaying text on text, which would double up the glow.
+ */
+const SHOP_SRC = join(SRC, 'The Roach Shop assets/uploads/storefronts.png');
+try {
+  const meta = await sharp(SHOP_SRC).metadata();
+  const half = Math.floor(meta.width / 2);
+  for (const [name, left] of [
+    ['shop-left', 0],
+    ['shop-right', half],
+  ]) {
+    for (const w of [640, 768]) {
+      await sharp(SHOP_SRC)
+        .extract({ left, top: 0, width: half, height: meta.height })
+        .resize({ width: w, withoutEnlargement: true })
+        .webp({ quality: 82, effort: 5 })
+        .toFile(join(OUT, `${name}-${w}.webp`));
+    }
+    const sz = (await stat(join(OUT, `${name}-768.webp`))).size;
+    console.log(`${name.padEnd(12)} ${half}x${meta.height} -> ${(sz / 1024).toFixed(0)}KB  [640, 768]`);
+  }
+} catch (e) {
+  console.warn('  shop render not processed:', e.message);
+}
+
 const OG_W = 1200;
 const OG_H = 630;
 const OG_MARK = 500; // height of the ARTWORK itself, after trimming its padding

@@ -20,6 +20,13 @@ export const brand = {
   /** Client-supplied. Lives on the domain, so it only works once mail is configured. */
   email: 'high@theroach.co.za',
 
+  /**
+   * The accessories store (glass, grinders, papers — paraphernalia, not cannabis).
+   * EMPTY until it exists: /choice renders that door as "opening soon" rather
+   * than a dead `#` link, so nobody clicks into nothing.
+   */
+  shopUrl: '',
+
   instagram: 'https://www.instagram.com/theroach710/',
 
   town: 'Knysna',

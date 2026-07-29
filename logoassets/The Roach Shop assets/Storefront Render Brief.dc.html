@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@200;300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<script src="./doc-page.js"></script>
+<style>
+html,body{margin:0;padding:0}
+doc-page:not(:defined){visibility:hidden}
+a{color:#8a6d16}
+a:hover{color:#c9a227}
+</style>
+</helmet>
+
+<doc-page margin="0.7in">
+  <div style="font-family:Jost,sans-serif;color:#1a1815;line-height:1.6">
+
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;border-bottom:2px solid #1a1815;padding-bottom:14px">
+      <div>
+        <div style="font-size:9pt;letter-spacing:.4em;color:#8a6d16;text-transform:uppercase">The Roach · Crafted for the collective</div>
+        <h1 style="margin:8px 0 0;font-family:'Cormorant Garamond',serif;font-weight:400;font-size:30pt;line-height:1.1;letter-spacing:-.01em">Storefront render brief</h1>
+      </div>
+      <div style="font-size:8.5pt;letter-spacing:.2em;color:#6b6560;text-align:right;white-space:nowrap">/shop hero pair<br>v1 · for AI generation</div>
+    </div>
+
+    <p style="font-family:'Cormorant Garamond',serif;font-size:13.5pt;line-height:1.6;color:#3a352e;margin:20px 0 26px">Two photographic storefront renders, shot as if they sit side by side on the same dark street. They are the only imagery on the page, so they must feel like one continuous scene split in two — same street, same night, same camera.</p>
+
+    <h2 style="font-size:10pt;letter-spacing:.32em;text-transform:uppercase;color:#8a6d16;margin:0 0 12px;font-weight:400">1 · The one rule that matters</h2>
+    <div style="border:1px solid #c9a227;background:#fdfaf1;padding:16px 20px;margin-bottom:26px;break-inside:avoid">
+      <strong style="font-weight:500">Render the sign boards EMPTY — no shop name, no text, no neon lettering.</strong>
+      <p style="margin:8px 0 0;font-size:10.5pt;color:#4a453e">The names, the leaf glyph and the glow are drawn live in the web page on top of the photo (that is how the sign flickers on, breathes, and reacts to hover). Any lettering baked into the render will collide with it. Leave the fascia as a dark empty panel with a faint inner shadow — but DO keep the coloured spill light on the wall and pavement, as if the sign above were already lit.</p>
+    </div>
+
+    <h2 style="font-size:10pt;letter-spacing:.32em;text-transform:uppercase;color:#8a6d16;margin:0 0 12px;font-weight:400">2 · Shared scene specification</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:10.5pt;margin-bottom:26px">
+      <tbody>
+        <tr style="border-top:1px solid #e0dbd2"><td style="padding:9px 0;width:150px;color:#6b6560">Framing</td><td style="padding:9px 0">Straight-on, eye level, no perspective tilt. Shopfront fills the frame edge to edge; ~12% headroom above the fascia, pavement visible at the bottom.</td></tr>
+        <tr style="border-top:1px solid #e0dbd2"><td style="padding:9px 0;color:#6b6560">Lens / camera</td><td style="padding:9px 0">35mm equivalent, f/4, tripod height 1.5m. Architectural, no fisheye, verticals perfectly parallel.</td></tr>
+        <tr style="border-top:1px solid #e0dbd2"><td style="padding:9px 0;color:#6b6560">Time / light</td><td style="padding:9px 0">Night. No daylight, no sky. Black surroundings falling to pure black at the frame edges. Wet, faintly reflective dark concrete pavement.</td></tr>
+        <tr style="border-top:1px solid #e0dbd2"><td style="padding:9px 0;color:#6b6560">Palette</td><td style="padding:9px 0">Near-black (#050505) base; deep forest-green joinery. Left shop spills mint green (#7CFFB2), right shop spills rose pink (#FF8FB8). No other hues.</td></tr>
+        <tr style="border-top:1px solid #e0dbd2"><td style="padding:9px 0;color:#6b6560">Aspect ratios</td><td style="padding:9px 0">Supply each shop in <strong>5:4</strong> (desktop), <strong>3:4</strong> (marquee layout) and <strong>4:5</strong> — or one generous 1:1 master per shop that crops safely to all three.</td></tr>
+        <tr style="border-top:1px solid #e0dbd2;border-bottom:1px solid #e0dbd2"><td style="padding:9px 0;color:#6b6560">Delivery</td><td style="padding:9px 0">2400px on the long edge minimum, PNG or high-quality JPG, no watermark, no people, no readable brand logos on any product.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 style="font-size:10pt;letter-spacing:.32em;text-transform:uppercase;color:#8a6d16;margin:0 0 12px;font-weight:400">3 · Prompt — left shop (accessories)</h2>
+    <div style="border-left:3px solid #1a1815;background:#f6f4ef;padding:16px 20px;font-family:'Cormorant Garamond',serif;font-size:11.5pt;line-height:1.65;margin-bottom:22px;break-inside:avoid">Photoreal night photograph of a small boutique smoke-accessory storefront, straight-on architectural view, 35mm, f/4. Matte black timber shopfront with a wide empty sign fascia above the window — the fascia panel is completely blank, no text, no lettering, no logo — lit from within by soft mint-green light spill onto the wall and pavement. Large plate-glass window revealing three warm-lit shelves of clear and coloured glass bongs, pipes and grinders, and a lower counter of rolling-paper boxes and tins, all generic and unbranded. One small potted plant to the side. Wet dark concrete pavement with soft green reflections. Background pure black, no sky, no people, no signage text anywhere. Cinematic, high detail, luxury retail, moody low-key lighting.</div>
+
+    <h2 style="font-size:10pt;letter-spacing:.32em;text-transform:uppercase;color:#8a6d16;margin:0 0 12px;font-weight:400">4 · Prompt — right shop (flowers)</h2>
+    <div style="border-left:3px solid #1a1815;background:#f6f4ef;padding:16px 20px;font-family:'Cormorant Garamond',serif;font-size:11.5pt;line-height:1.65;margin-bottom:26px;break-inside:avoid">Photoreal night photograph of a small florist storefront, straight-on architectural view, 35mm, f/4, identical camera and street as its neighbour. Deep forest-green painted timber shopfront with a wide empty sign fascia above the window — the fascia panel is completely blank, no text, no lettering, no logo — bathed in soft rose-pink light spill onto the wall and pavement. Large window showing dried flower bunches hanging upside down from a rail, stone and concrete vases of dried blooms on the sill, apothecary jars on shelves behind. Wet dark concrete pavement with soft pink reflections. Background pure black, no sky, no people, no signage text anywhere. Cinematic, high detail, romantic, moody low-key lighting.</div>
+
+    <h2 style="font-size:10pt;letter-spacing:.32em;text-transform:uppercase;color:#8a6d16;margin:0 0 12px;font-weight:400">5 · Accept / reject checklist</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:10.5pt;break-inside:avoid;margin-bottom:26px">
+      <div style="border-top:2px solid #2f6b45;padding-top:10px">
+        <div style="font-size:9pt;letter-spacing:.24em;text-transform:uppercase;color:#2f6b45;margin-bottom:8px">Accept</div>
+        <div style="display:flex;flex-direction:column;gap:6px;color:#3a352e">
+          <span>Blank fascia, coloured spill still present</span>
+          <span>Verticals parallel, no lens distortion</span>
+          <span>Edges fall to true black for seamless tiling</span>
+          <span>Both shops share one horizon and pavement line</span>
+          <span>Products unbranded and generic</span>
+        </div>
+      </div>
+      <div style="border-top:2px solid #8f2f2f;padding-top:10px">
+        <div style="font-size:9pt;letter-spacing:.24em;text-transform:uppercase;color:#8f2f2f;margin-bottom:8px">Reject</div>
+        <div style="display:flex;flex-direction:column;gap:6px;color:#3a352e">
+          <span>Any text, neon words or garbled AI lettering</span>
+          <span>Daylight, sky, street furniture or passers-by</span>
+          <span>Warm orange sodium street lighting</span>
+          <span>Third colour entering the palette</span>
+          <span>Perspective angle differing between the two</span>
+        </div>
+      </div>
+    </div>
+
+    <h2 style="font-size:10pt;letter-spacing:.32em;text-transform:uppercase;color:#8a6d16;margin:0 0 12px;font-weight:400">6 · Where they land</h2>
+    <p style="font-size:10.5pt;color:#3a352e;margin:0">Drop each finished render straight onto its placeholder in <strong>The Roach Shop</strong> mockup — the left and right image slots accept a drag-and-drop and keep the file. The live neon lettering, the flicker-on, the hover glow and the age gate are already built around them.</p>
+
+  </div>
+</doc-page>
+
+</x-dc>
+</body>
+</html>
