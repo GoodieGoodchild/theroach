@@ -14,11 +14,18 @@ import { useMounted } from '@/lib/useMounted';
  * never a lit/unlit image swap). The signs are SVG so they can strike, breathe
  * and swing independently of the window they hang over.
  *
- * Selecting a door rotates the whole assembly ~13° toward the viewer while the
- * sign counter-rotates to face the camera dead-on and grows — the "looking at
- * you now" move. The other door dims. Escape or a click on the street resets
- * (both doors navigate away, but if navigation doesn't happen — blocked pop-up,
- * a door with no destination yet — the page must never trap half-dark).
+ * Selecting a door LIFTS and brightens it and dims the other. It deliberately
+ * does NOT rotate: the perspective is already in the photograph, so turning it
+ * further compounded with the shot and bent the shopfront (see the note on the
+ * open state below).
+ *
+ * On a mouse, one click opens. On touch there is no hover, so the first tap
+ * lights the shop and the second opens it — and that second tap changes
+ * nothing visually, it only follows the link.
+ *
+ * The page must never trap half-lit: Escape, a click on bare street, and the
+ * blur/visibilitychange reset all clear it, because the WhatsApp door opens in
+ * a new tab and this page never navigates away on its own.
  */
 
 type Side = 'left' | 'right';
@@ -419,10 +426,24 @@ function Window({
   /** Hold everything at rest: no JS yet, or the visitor asked for less motion. */
   const still = reduce || !mounted;
 
-  // The door turns toward the centre of the street; the sign counter-rotates by
-  // the same angle when open, so it faces the camera dead-on while the window
-  // stays turned. Nested preserve-3d makes the child rotation relative.
-  const turn = door.id === 'left' ? 13 : -13;
+  /**
+   * ── WHY THE OPEN STATE NO LONGER ROTATES THE WINDOW ──────────────────────
+   *
+   * It used to add rotateY(±13°). That was wrong twice over.
+   *
+   * The perspective is already IN the photograph — the left window was shot
+   * with its left edge nearer, which is why angleFromClip() reads +17.9° off
+   * its trapezoid. Rotating +13° on top turned it FURTHER the same way, so
+   * the two compounded to roughly 31° and the shopfront visibly bent.
+   *
+   * And the sign counter-rotated to face the camera while the window turned
+   * away, which pulled the two off the shared plane that cameraFromClip()
+   * exists to enforce. The sign detached from its own building.
+   *
+   * So selecting a door now lifts, brightens and scales it, and dims the
+   * other — no rotation, nothing to compound, and the sign stays welded to
+   * the glass at every state.
+   */
 
   // Plain elements: nothing on this door is Motion-driven any more.
   const Tag = live ? 'a' : 'div';
@@ -474,7 +495,7 @@ function Window({
         transform: still
           ? undefined
           : open
-            ? `translateY(-12px) rotateY(${turn}deg) scale(1.02)`
+            ? 'translateY(-12px) scale(1.02)'
             : dimmed
               ? 'scale(0.98)'
               : undefined,
@@ -519,7 +540,7 @@ function Window({
                 still || (!open && !warm)
                   ? undefined
                   : open
-                    ? `translateY(-5px) rotateY(${-angle - turn}deg) scale(1.15)`
+                    ? `translateY(-5px) rotateY(${-angle}deg) scale(1.15)`
                     : `translateY(-2px) rotateY(${-angle}deg) scale(1.07)`,
               transition: still ? undefined : 'transform .55s cubic-bezier(.34,1.56,.64,1)',
             }}
@@ -780,17 +801,27 @@ export default function ShopChoice() {
    * free rather than inventing a second, near-identical visual state.
    */
   const select = (side: Side) => (e: React.MouseEvent) => {
+    // A door with nowhere to go yet: tapping it is the only way to light it up,
+    // so it toggles instead of navigating.
+    if (!DOORS[side].href) {
+      setOpened((current) => (current === side ? null : side));
+      return;
+    }
+
+    // Touch, not yet lit: light it and stay on the page.
     if (coarse && opened !== side) {
-      // Only meaningful on the linked door; harmless on the one with no href.
       e.preventDefault();
       setOpened(side);
       return;
     }
-    setOpened(side);
-    // Belt and braces for the door that is actually opening: a blocked popup
-    // or an in-app browser that swallows target="_blank" fires no blur and no
-    // visibilitychange, so nothing above would ever clear it.
-    if (DOORS[side].href) window.setTimeout(() => setOpened(null), 1500);
+
+    // This click is opening the link, so it changes NOTHING. Re-running the
+    // state here is what made the second tap re-fire the animation and throw
+    // the storefront off. The visitor should see the shop they already lit,
+    // held exactly as it was, while the link opens over it.
+    //
+    // Clearing up is handled by the blur/visibilitychange reset, which fires
+    // once the new tab takes focus — off screen, where nobody sees it.
   };
 
   const stateFor = (side: Side): DoorState => {
