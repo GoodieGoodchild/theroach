@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { motion, useReducedMotion } from 'motion/react';
 import { useEffect, useState } from 'react';
@@ -37,6 +37,14 @@ const DOORS = {
     text: '#CFFFE4',
     img: '/img/window-left',
     ratio: '744 / 786',
+    /**
+     * The window is photographed at an angle, so its frame is a trapezoid, not
+     * a rectangle. Corners were MEASURED by least-squares fitting the frame's
+     * four lit edges and intersecting them (left window is viewed from the
+     * left: top edge falls 13% across the width). Everything outside this quad
+     * is scene, and gets clipped. Re-measure if the source render changes.
+     */
+    clip: 'polygon(0.4% 0%, 99.2% 13.1%, 99.2% 88.5%, 0.7% 99.2%)',
     external: false,
   },
   right: {
@@ -49,6 +57,9 @@ const DOORS = {
     text: '#FFD5E4',
     img: '/img/window-right',
     ratio: '752 / 740',
+    // Measured like the left. This one is viewed from the right: the top edge
+    // rises 11% across, the bottom is near-flat.
+    clip: 'polygon(1.1% 14.4%, 100% 3%, 100% 97.8%, 1.1% 98%)',
     external: true,
   },
 };
@@ -167,7 +178,10 @@ function NeonSign({
               >
                 Bud &amp; Bloom
               </text>
-              <line x1="66" y1="104" x2="140" y2="104" stroke={l.fill} strokeWidth="1.2" />
+              {/* Rules end at x=118/282: "FLOWER SHOP" at 13px with 0.42em
+                  tracking spans ~x120–280 (measured via getBBox), so the previous
+                  straight through the F and the P — the "strikethrough". */}
+              <line x1="42" y1="104" x2="108" y2="104" stroke={l.fill} strokeWidth="1.2" />
               <text
                 x="200"
                 y="109"
@@ -180,7 +194,7 @@ function NeonSign({
               >
                 FLOWER SHOP
               </text>
-              <line x1="260" y1="104" x2="334" y2="104" stroke={l.fill} strokeWidth="1.2" />
+              <line x1="292" y1="104" x2="358" y2="104" stroke={l.fill} strokeWidth="1.2" />
             </>
           )}
         </g>
@@ -246,7 +260,11 @@ function Window({
       }
       transition={{ duration: 0.9, ease: [0.2, 0.7, 0.2, 1] }}
     >
-      {/* ── The sign — swings independently of the window it hangs over ── */}
+      {/* ── The sign — hangs on the window's own plane, and only moves when
+          activated. At idle it has NO rotation of its own (an angled sign over
+          a flat window read as being on a different axis). On select it turns
+          toward the camera — counter-rotating the door's 13° so it faces the
+          viewer dead-on — and enlarges a little. ── */}
       <motion.div
         className="relative z-10 mx-auto w-[86%]"
         style={{ transformStyle: 'preserve-3d', transformOrigin: '50% 100%' }}
@@ -254,27 +272,37 @@ function Window({
           reduce || !mounted
             ? {}
             : open
-              ? { rotateY: -turn, scale: 1.16, y: -6 }
+              ? { rotateY: -turn, scale: 1.14, y: -5 }
               : warm
-                ? { rotateY: 0, scale: 1.06, y: -2 }
-                : { rotateY: door.id === 'left' ? -9 : 9, scale: 1, y: 0 }
+                ? { rotateY: 0, scale: 1.05, y: -2 }
+                : { rotateY: 0, scale: 1, y: 0 }
         }
         transition={{ type: 'spring', stiffness: 170, damping: 19 }}
       >
         <NeonSign side={door.id} lit={warm} />
       </motion.div>
 
-      {/* ── The glass window — one image, lit entirely by filters ── */}
+      {/* ── The glass window — one image, lit entirely by filters ──
+          The frame is a photographed trapezoid, so the cutout is a measured
+          clip-path on the inner box, and the glow is drop-shadow on THIS outer
+          wrapper — drop-shadow follows the clipped silhouette, where box-shadow
+          would draw a rectangle around a non-rectangular window. */}
       <div
-        className="relative -mt-1 overflow-hidden"
+        className="relative -mt-1"
+        style={{
+          filter: open
+            ? `drop-shadow(0 30px 60px rgba(0,0,0,.85)) drop-shadow(0 0 46px rgba(${door.tint},.34))`
+            : warm
+              ? `drop-shadow(0 26px 55px rgba(0,0,0,.85)) drop-shadow(0 0 30px rgba(${door.tint},.2))`
+              : 'drop-shadow(0 20px 45px rgba(0,0,0,.75))',
+          transition: 'filter .7s ease',
+        }}
+      >
+      <div
+        className="relative overflow-hidden"
         style={{
           aspectRatio: door.ratio,
-          boxShadow: open
-            ? `0 34px 100px rgba(0,0,0,.9), 0 0 90px rgba(${door.tint},.28), inset 0 0 0 1px rgba(${door.tint},.4)`
-            : warm
-              ? `0 30px 90px rgba(0,0,0,.9), 0 0 60px rgba(${door.tint},.18), inset 0 0 0 1px rgba(${door.tint},.3)`
-              : `0 20px 60px rgba(0,0,0,.8), inset 0 0 0 1px rgba(${door.tint},.1)`,
-          transition: 'box-shadow .7s ease',
+          clipPath: door.clip,
         }}
       >
         <picture>
@@ -327,12 +355,10 @@ function Window({
           </div>
         )}
 
-        {/* Keyboard focus ring on the whole pane */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity group-focus-visible:opacity-100"
-          style={{ boxShadow: `inset 0 0 0 2px rgba(${door.tint},.9)` }}
-        />
+        {/* No rectangular focus ring — it cannot follow the trapezoid. Focus
+            fires the warm state instead (onFocus lights the sign, CTA
+            glows, window brightens), which is the visible focus indicator. */}
+      </div>
       </div>
 
       {/* ── The CTA — a neon box below the glass ── */}
