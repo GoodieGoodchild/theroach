@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { motion, useReducedMotion } from 'motion/react';
+import { useReducedMotion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { brand, waLink } from '@/lib/config';
 import { useMounted } from '@/lib/useMounted';
@@ -391,6 +391,7 @@ function Window({
   door,
   state,
   angle,
+  coarse,
   onEnter,
   onLeave,
   onSelect,
@@ -399,9 +400,11 @@ function Window({
   state: DoorState;
   /** Idle lean of the sign. Derived from the clip; the ?tune panel overrides it. */
   angle: number;
+  /** Touch device: the first tap lights the shop, the second one opens it. */
+  coarse: boolean;
   onEnter: () => void;
   onLeave: () => void;
-  onSelect: () => void;
+  onSelect: (e: React.MouseEvent) => void;
 }) {
   const reduce = useReducedMotion();
   const mounted = useMounted();
@@ -417,7 +420,8 @@ function Window({
   // stays turned. Nested preserve-3d makes the child rotation relative.
   const turn = door.id === 'left' ? 13 : -13;
 
-  const Tag = live ? motion.a : motion.div;
+  // Plain elements: nothing on this door is Motion-driven any more.
+  const Tag = live ? 'a' : 'div';
 
   return (
     <Tag
@@ -426,10 +430,13 @@ function Window({
             href: door.href,
             target: door.external ? '_blank' : undefined,
             rel: door.external ? 'noopener noreferrer' : undefined,
-            onClick: onSelect,
             tabIndex: 0,
           }
         : { 'aria-disabled': true })}
+      /* Attached to BOTH kinds of door, not just the linked one: on a touch
+         screen a tap is the only way to light a shop up, and the accessories
+         window deserves to light up too even though it has nowhere to go yet. */
+      onClick={onSelect}
       onFocus={onEnter}
       onBlur={onLeave}
       onMouseEnter={onEnter}
@@ -442,34 +449,34 @@ function Window({
        * follows from the photograph's aspect. Both windows share a height so
        * their buttons line up; their widths differ because the two photographs
        * do — which is honest to them, and reads as two real shopfronts.
+       *
+       * ── WHY THIS IS CSS AND NOT MOTION ────────────────────────────────────
+       *
+       * Motion's `animate` is inert on this page and this page only. Measured:
+       * with the door genuinely open (CTA switched to TAP AGAIN, glass lit at
+       * brightness(1.24)) and sampled continuously from 30ms to 1500ms, Motion
+       * wrote `transform: none` and `opacity: 1` the entire time, while the
+       * identical pattern animates fine on the home page.
+       *
+       * Everything on this page that DOES work — the sign's lean, the window
+       * lighting, the neon strike, the CTA glow — is plain CSS. So the turn is
+       * too. It also means the effect no longer depends on a JS library
+       * succeeding on a phone, which is exactly where it needs to survive.
        */
       style={{
         transformStyle: 'preserve-3d',
         width: COLUMN_W,
         maxWidth: '100%',
+        transform: still
+          ? undefined
+          : open
+            ? `translateY(-12px) rotateY(${turn}deg) scale(1.02)`
+            : dimmed
+              ? 'scale(0.98)'
+              : undefined,
+        opacity: dimmed ? 0.3 : 1,
+        transition: still ? undefined : 'transform .9s cubic-bezier(.2,.7,.2,1), opacity .9s ease',
       }}
-      /**
-       * Every key is ALWAYS present, and `still` collapses them to the rest
-       * pose. Never `animate={}`: an element that mounts with an empty target
-       * registers no animatable values, and keys introduced on a later render
-       * are then never written — which left the whole street inert (no dim, no
-       * turn, no swing) while the home page animated fine.
-       *
-       * `initial={false}` is safe here precisely because rest IS the neutral
-       * pose, so the static export ships no hidden styles.
-       */
-      initial={false}
-      animate={
-        still
-          ? { rotateY: 0, y: 0, scale: 1, opacity: 1 }
-          : {
-              rotateY: open ? turn : 0,
-              y: open ? -12 : 0,
-              scale: open ? 1.02 : dimmed ? 0.98 : 1,
-              opacity: dimmed ? 0.3 : 1,
-            }
-      }
-      transition={{ duration: 0.9, ease: [0.2, 0.7, 0.2, 1] }}
     >
       {/* ── The sign — hangs IN the window's own perspective at idle: the same
           angle and depth as the photograph beneath it, so on the left the H of
@@ -498,20 +505,23 @@ function Window({
           {/* Motion animates only the DEVIATION from that rest pose: on hover it
               unwinds the lean to face the camera; on select it unwinds the
               door's turn as well. Idle is 0 — no transform needed. */}
-          <motion.div
-            style={{ transformOrigin: '50% 100%' }}
-            initial={false}
-            animate={
-              still || (!open && !warm)
-                ? { rotateY: 0, scale: 1, y: 0 }
-                : open
-                  ? { rotateY: -angle - turn, scale: 1.15, y: -5 }
-                  : { rotateY: -angle, scale: 1.07, y: -2 }
-            }
-            transition={{ type: 'spring', stiffness: 150, damping: 15 }}
+          {/* CSS for the same reason as the door above. The cubic-bezier
+              overshoots past 1, which is what keeps this reading as a swing
+              rather than a slide — it was a spring before. */}
+          <div
+            style={{
+              transformOrigin: '50% 100%',
+              transform:
+                still || (!open && !warm)
+                  ? undefined
+                  : open
+                    ? `translateY(-5px) rotateY(${-angle - turn}deg) scale(1.15)`
+                    : `translateY(-2px) rotateY(${-angle}deg) scale(1.07)`,
+              transition: still ? undefined : 'transform .55s cubic-bezier(.34,1.56,.64,1)',
+            }}
           >
             <NeonSign side={door.id} lit={warm} />
-          </motion.div>
+          </div>
         </div>
       </div>
 
@@ -617,7 +627,10 @@ function Window({
           transition: 'all .6s ease',
         }}
       >
-        {door.cta}
+        {/* On touch, an armed door says so. Without this the first tap reads as
+            a dead link — the shop lights up, but nothing tells you the tap
+            landed on purpose or that a second one opens it. */}
+        {coarse && open && live ? 'TAP AGAIN TO OPEN' : door.cta}
       </div>
 
       <div
@@ -683,6 +696,31 @@ export default function ShopChoice() {
   const [opened, setOpened] = useState<Side | null>(null);
   const [tuning, setTuning] = useState(false);
   const [angles, setAngles] = useState<Record<Side, number>>(SIGN_ANGLE);
+  const [coarse, setCoarse] = useState(false);
+
+  /**
+   * `(hover: none)` — the device cannot hover, so it never gets the lit-up
+   * state a mouse gets for free. Deliberately NOT a width breakpoint: a narrow
+   * desktop window still has a mouse and should still open on one click, and a
+   * large tablet has no mouse and should not.
+   *
+   * Read after mount and kept live, so plugging in a mouse or rotating into a
+   * desktop-class pointer switches behaviour without a reload.
+   */
+  useEffect(() => {
+    // /choice/?touch forces the two-stage tap on a desktop, so the interaction
+    // can be demonstrated (and tested) without a phone in hand. Query-gated
+    // like ?tune, so it never reaches a visitor.
+    if (new URLSearchParams(window.location.search).has('touch')) {
+      setCoarse(true);
+      return;
+    }
+    const mq = window.matchMedia('(hover: none)');
+    const sync = () => setCoarse(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
 
   // After mount only: the query string does not exist during the static export,
   // so reading it in render would desync hydration.
@@ -696,6 +734,26 @@ export default function ShopChoice() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [opened]);
+
+  /**
+   * Mouse: one click opens, exactly as before.
+   *
+   * Touch: the first tap arms the door — it lights, turns toward you and dims
+   * the other side — and the second tap follows the link. Without this, a tap
+   * navigates instantly and the storefront moment never happens at all.
+   *
+   * "Armed" reuses `opened`, so the two-stage tap gets the full open state for
+   * free rather than inventing a second, near-identical visual state.
+   */
+  const select = (side: Side) => (e: React.MouseEvent) => {
+    if (coarse && opened !== side) {
+      // Only meaningful on the linked door; harmless on the one with no href.
+      e.preventDefault();
+      setOpened(side);
+      return;
+    }
+    setOpened(side);
+  };
 
   const stateFor = (side: Side): DoorState => {
     if (opened === side) return 'open';
@@ -756,18 +814,20 @@ export default function ShopChoice() {
           door={DOORS.left}
           state={stateFor('left')}
           angle={angles.left}
+          coarse={coarse}
           onEnter={() => setHovered('left')}
           onLeave={() => setHovered(null)}
-          onSelect={() => setOpened('left')}
+          onSelect={select('left')}
         />
 
         <Window
           door={DOORS.right}
           state={stateFor('right')}
           angle={angles.right}
+          coarse={coarse}
           onEnter={() => setHovered('right')}
           onLeave={() => setHovered(null)}
-          onSelect={() => setOpened('right')}
+          onSelect={select('right')}
         />
       </div>
 
