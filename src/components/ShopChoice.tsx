@@ -60,10 +60,15 @@ const DOORS = {
     tint: '255, 143, 184', // rose
     text: '#FFD5E4',
     img: '/img/window-right',
-    ratio: '2070 / 2280',
-    // Measured and proven like the left. This render is viewed from its right:
-    // the right edge is nearer — top rises ~9% across, bottom falls ~8%.
-    clip: 'polygon(0.5% 10.1%, 99.3% 0.9%, 99.4% 98.6%, 0.4% 90.8%)',
+    ratio: '2124 / 2360',
+    /**
+     * Fitted by scripts/fit-quad.mjs on the final crop (41/41 edge inliers) and
+     * proven with the red-mask preview: the quad's top and bottom run PARALLEL
+     * to the photographed frame (top falls 10.3% left-to-right, bottom rises
+     * 9.7% — the render's own perspective, right edge nearer). The frame spans
+     * the crop's full width, so the sides sit at 0/100%.
+     */
+    clip: 'polygon(0% 11.1%, 100% 0.8%, 100% 97.4%, 0% 87.7%)',
     // Mirror of the left: right edge nearer, so the sign's last letters sit
     // closest to the viewer. Negative rotateY brings the RIGHT edge forward.
     signAngle: -14,

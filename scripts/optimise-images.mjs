@@ -167,7 +167,9 @@ const WINDOWS = [
   {
     file: 'theroachimages/theroachwhatsappglasswindownew.png',
     name: 'window-right',
-    rect: { left: 50, top: 740, width: 2070, height: 2280 },
+    // Expanded after scripts/fit-quad.mjs proved the previous rect cut the
+    // frame's top-right corner (TR fitted to y=-1.8%) and left jamb (x=0.0).
+    rect: { left: 18, top: 680, width: 2124, height: 2360 },
   },
 ];
 for (const { file, name, rect } of WINDOWS) {
