@@ -317,13 +317,17 @@ function NeonSign({
                 textAnchor="middle"
                 fill={l.fill}
                 style={{
+                  /* 0.341em, not the old 0.16: THE ROACH is nine characters
+                     where HIGH SOCIETY was twelve, so at the same size it fell
+                     56 units short of the x44-356 box and the sign tapered
+                     again. Tracking widens without adding height. */
                   font: '300 34px var(--font-display)',
-                  letterSpacing: '0.16em',
+                  letterSpacing: '0.341em',
                 }}
               >
-                HIGH SOCIETY
+                THE ROACH
               </text>
-              {/* Rules run out to SIGN_BOX_L, matching HIGH SOCIETY's measured
+              {/* Rules run out to x356, matching THE ROACH's measured
                   extent above, so the sign fills a rectangle instead of
                   tapering to a narrow base. Inner ends stop 11.1 units clear of
                   GOODS (measured x161.1–238.9 via getBBox). */}
@@ -350,15 +354,15 @@ function NeonSign({
                 textAnchor="middle"
                 fill={l.fill}
                 style={{
-                  /* 60px, not 52: at 52 the title measured x64–334 while the
-                     rules below ran x42–358, so the sign flared OUTWARD at the
-                     base — the mirror of the left sign's inward taper. 60px
-                     brings it to the shared x44–356 box. */
-                  font: 'italic 300 60px var(--font-serif)',
-                  letterSpacing: '0.03em',
+                  /* 68px + 0.15em tracking to reach the same x44–356 box.
+                     Size alone would need 89px, whose bbox starts at y=−10 and
+                     bursts through the top of the 132-unit viewBox. At 68 it
+                     runs y8.6–90.9, clearing the FLOWER SHOP row at 96.9. */
+                  font: 'italic 300 68px var(--font-serif)',
+                  letterSpacing: '0.15em',
                 }}
               >
-                Bud &amp; Bloom
+                The Joint
               </text>
               {/* Inner ends at x=108/292: "FLOWER SHOP" at 13px with 0.42em
                   tracking measures x119.8–280.2 via getBBox, so ending here
@@ -480,7 +484,7 @@ function Window({
     >
       {/* ── The sign — hangs IN the window's own perspective at idle: the same
           angle and depth as the photograph beneath it, so on the left the H of
-          HIGH SOCIETY sits nearer the viewer than the Y, mirrored on the right.
+          THE ROACH sits nearer the viewer than the H, mirrored on the right.
           On hover it comes forward with a swing (spring overshoot) toward the
           camera; on select it counter-rotates the door's turn to face the
           viewer dead-on and grows. ── */}
@@ -667,7 +671,7 @@ function Tuner({
       {(['left', 'right'] as Side[]).map((side) => (
         <label key={side} className="mb-3 block">
           <span className="flex justify-between">
-            <span>{side === 'left' ? 'HIGH SOCIETY' : 'Bud &amp; Bloom'}</span>
+            <span>{side === 'left' ? 'THE ROACH' : 'The Joint'}</span>
             <span className="text-gold-lit">{angles[side].toFixed(1)}°</span>
           </span>
           <input
@@ -736,6 +740,36 @@ export default function ShopChoice() {
   }, [opened]);
 
   /**
+   * ── DON'T LEAVE THE STREET LOCKED OPEN ───────────────────────────────────
+   *
+   * The WhatsApp door is target="_blank", so this page never navigates away.
+   * Without this, tapping through leaves it frozen — one shop lit and turned,
+   * the other dimmed to 0.3, the button stuck on TAP AGAIN TO OPEN — and you
+   * come back from WhatsApp to a street that looks broken. Escape and a click
+   * on bare street already cleared it, but on a phone there is almost no bare
+   * street to hit.
+   *
+   * So: reset whenever the page is backgrounded (the new tab or the WhatsApp
+   * app taking focus) and again when it is restored from bfcache, which fires
+   * pageshow rather than a fresh mount.
+   */
+  useEffect(() => {
+    const reset = () => {
+      setOpened(null);
+      setHovered(null);
+    };
+    const onVisibility = () => document.hidden && reset();
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pageshow', reset);
+    window.addEventListener('blur', reset);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pageshow', reset);
+      window.removeEventListener('blur', reset);
+    };
+  }, []);
+
+  /**
    * Mouse: one click opens, exactly as before.
    *
    * Touch: the first tap arms the door — it lights, turns toward you and dims
@@ -753,6 +787,10 @@ export default function ShopChoice() {
       return;
     }
     setOpened(side);
+    // Belt and braces for the door that is actually opening: a blocked popup
+    // or an in-app browser that swallows target="_blank" fires no blur and no
+    // visibilitychange, so nothing above would ever clear it.
+    if (DOORS[side].href) window.setTimeout(() => setOpened(null), 1500);
   };
 
   const stateFor = (side: Side): DoorState => {
