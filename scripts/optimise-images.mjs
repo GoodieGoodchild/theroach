@@ -135,36 +135,49 @@ console.log('favicon  → src/app/icon.png');
  * Kept well under ~300KB, roughly where WhatsApp gives up fetching a preview.
  */
 /**
- * ── SHOP STOREFRONTS ─────────────────────────────────────────────────────────
+ * ── SHOP GLASS WINDOWS ───────────────────────────────────────────────────────
  *
- * One render contains BOTH windows side by side, so split it down the middle.
- * The signage and CTA are baked into the render (the original brief called for
- * empty sign boards with HTML neon on top, but this render has clean, legible
- * lettering — no AI garbling — so it is better used as-is than fought with).
+ * The client supplied two sign-free glass-window renders — the signage lives in
+ * SVG on the page so it can flicker, glow and swing independently, and the same
+ * image serves every lighting state via CSS brightness/contrast (his explicit
+ * instruction: one image per window, filters do the glow — never a lit/unlit
+ * image swap).
  *
- * The "shop turns on" effect therefore comes from lighting the whole panel in
- * CSS rather than from overlaying text on text, which would double up the glow.
+ * Crop rectangles are MEASURED, not guessed: a luminance scan found the frame
+ * bounds, and a row-profile found the true bottom of the right window at y≈975
+ * (below it is only faint floor reflection, which would read as a building —
+ * these must float). Re-measure if the source images change:
+ *   left  content: x 6–739,  y 180–956
+ *   right content: x 1–751,  y 265–~975 (bbox to 1291 is floor glow)
  */
-const SHOP_SRC = join(SRC, 'The Roach Shop assets/uploads/storefronts.png');
-try {
-  const meta = await sharp(SHOP_SRC).metadata();
-  const half = Math.floor(meta.width / 2);
-  for (const [name, left] of [
-    ['shop-left', 0],
-    ['shop-right', half],
-  ]) {
-    for (const w of [640, 768]) {
-      await sharp(SHOP_SRC)
-        .extract({ left, top: 0, width: half, height: meta.height })
+const WINDOWS = [
+  {
+    file: 'theroachimages/theroachshopglasswindow.png',
+    name: 'window-left',
+    rect: { left: 2, top: 176, width: 744, height: 786 },
+  },
+  {
+    file: 'theroachimages/theroachwhatsappglasswindow.png',
+    name: 'window-right',
+    rect: { left: 0, top: 244, width: 752, height: 740 },
+  },
+];
+for (const { file, name, rect } of WINDOWS) {
+  try {
+    for (const w of [560, 744]) {
+      await sharp(join(SRC, file))
+        .extract(rect)
         .resize({ width: w, withoutEnlargement: true })
-        .webp({ quality: 82, effort: 5 })
+        .webp({ quality: 84, effort: 5 })
         .toFile(join(OUT, `${name}-${w}.webp`));
     }
-    const sz = (await stat(join(OUT, `${name}-768.webp`))).size;
-    console.log(`${name.padEnd(12)} ${half}x${meta.height} -> ${(sz / 1024).toFixed(0)}KB  [640, 768]`);
+    const sz = (await stat(join(OUT, `${name}-744.webp`))).size;
+    console.log(
+      `${name.padEnd(14)} ${rect.width}x${rect.height} -> ${(sz / 1024).toFixed(0)}KB  [560, 744]`,
+    );
+  } catch (e) {
+    console.warn(`  ${name} not processed:`, e.message);
   }
-} catch (e) {
-  console.warn('  shop render not processed:', e.message);
 }
 
 const OG_W = 1200;

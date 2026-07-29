@@ -157,6 +157,29 @@ body {
   animation: breathe 7s ease-in-out infinite;
 }
 
+/* ── Neon signage (/choice) ──────────────────────────────────── */
+/* The strike: a real neon tube doesn't fade in, it stutters. Played once when a
+   sign lights; `neon-lit` then idles the tube with a slow breathe. */
+@keyframes neon-flick {
+  0% { opacity: 0.25; }
+  6% { opacity: 1; }
+  9% { opacity: 0.3; }
+  14% { opacity: 1; }
+  17% { opacity: 0.45; }
+  21% { opacity: 1; }
+  100% { opacity: 1; }
+}
+.neon-strike {
+  animation: neon-flick 1.4s ease-out both;
+}
+@keyframes neon-breathe {
+  0%, 100% { opacity: 0.88; }
+  50% { opacity: 1; }
+}
+.neon-lit {
+  animation: neon-breathe 4.5s ease-in-out 1.4s infinite;
+}
+
 /* ── Hint pulse ──────────────────────────────────────────────── */
 @keyframes hint {
   0%,
