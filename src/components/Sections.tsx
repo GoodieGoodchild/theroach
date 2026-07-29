@@ -186,15 +186,16 @@ export const sections: Section[] = [
         <Title>The circle is one message wide.</Title>
         <Rule />
         <Body>
-          No storefront. No catalogue. Just a conversation — where it’s always been, person to
-          person.
+          Two windows on a quiet street: the goods counter, and the growers’ room. No catalogue,
+          no checkout — just a conversation, where it’s always been, person to person.
         </Body>
 
+        {/* Goes to /choice, not straight to WhatsApp: the two storefronts are
+            the door now, and the accessories store lives behind the same step.
+            The WhatsApp link itself is one click further, on the right window. */}
         <Stagger delay={0.4}>
           <a
-            href={waLink}
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/choice/"
             className="group relative mt-12 inline-flex items-center gap-4 rounded-full border border-gold/50 bg-ink-2 px-10 py-5 outline-none transition-colors duration-500 hover:border-gold focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
           >
             <span
@@ -205,11 +206,8 @@ export const sections: Section[] = [
                   'radial-gradient(closest-side, transparent 60%, rgba(255,122,46,0.14) 82%, transparent)',
               }}
             />
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="relative text-gold">
-              <path d="M17.5 14.4c-.3-.2-1.7-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.7 1-.9 1.2-.2.2-.3.2-.6.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.5-.5c.1-.2.2-.3.3-.5v-.5c-.1-.1-.7-1.5-.9-2.1-.2-.5-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1.1 2.8 1.2 3c.1.2 2.1 3.2 5 4.4.7.3 1.2.5 1.7.6.7.2 1.3.2 1.8.1.6-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2Z" />
-            </svg>
             <span className="relative font-display text-sm font-light tracking-[0.35em] text-gold-lit uppercase">
-              Open WhatsApp
+              Step off the street
             </span>
           </a>
         </Stagger>

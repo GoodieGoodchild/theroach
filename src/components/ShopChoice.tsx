@@ -24,6 +24,152 @@ import { useMounted } from '@/lib/useMounted';
 type Side = 'left' | 'right';
 type DoorState = 'idle' | 'hover' | 'open' | 'dimmed';
 
+/**
+ * Height of the glass itself. Everything else in a door column is sized from
+ * this, so the sign, window and button always fit the viewport together — the
+ * windows previously ate so much height that the button fell below the fold.
+ */
+const WINDOW_H = 'clamp(230px, 36vh, 360px)';
+
+/**
+ * Both columns take the width of the WIDER window, and each window is centred
+ * inside its column at its own natural width. That keeps the signs and buttons
+ * identically sized and perfectly aligned across the street, while the two
+ * photographs keep their real proportions — sizing each column to its own
+ * window made the wider one grow a taller sign and drop its button 14px.
+ */
+const COLUMN_ASPECT = 2124 / 2360;
+
+/**
+ * The sign, as a fraction of the column. Wider than the glass on purpose: a
+ * shopfront sign overhangs its window, and there is ~128px of street between
+ * the columns for it to hang into.
+ */
+const SIGN_SCALE = 1.16;
+
+/** Column width and sign width, as CSS expressions — everything derives from
+    the glass height so one clamp controls the whole layout. */
+const COLUMN_W = `calc(${WINDOW_H} * ${COLUMN_ASPECT})`;
+const SIGN_W = `calc(${COLUMN_W} * ${SIGN_SCALE})`;
+
+/**
+ * ── THE SIGN'S PERSPECTIVE ───────────────────────────────────────────────────
+ *
+ * Deliberately NOT the street's `perspective: 1800`. That value is a gentle,
+ * architectural depth for two columns standing apart; the windows themselves
+ * were photographed with a far shorter effective camera distance, and their
+ * trapezoids are correspondingly steep. Solving angleFromClip() against 1800
+ * asks for sin θ > 1 — there is literally no rotation that reproduces the
+ * photograph at that depth. Giving the sign its own perspective equal to its
+ * own width matches the renders and keeps the derived angles sane (~13–18°).
+ *
+ * This value and angleFromClip() are a matched pair: change one and the sign
+ * stops sitting in the window's plane. See the derivation in angleFromClip.
+ */
+const SIGN_PERSPECTIVE = SIGN_W;
+
+/**
+ * Derive the plane's rotation from the window's own trapezoid — no eyeballing.
+ *
+ * The clip is `polygon(TL, TR, BR, BL)` in percentages. Under perspective, a
+ * plane rotated about its vertical axis projects its near edge taller than its
+ * far edge in exact proportion to their distances from the camera:
+ *
+ *     r = leftEdgeHeight / rightEdgeHeight = (P + (W/2)·sin θ) / (P − (W/2)·sin θ)
+ *
+ * Solving for the rotation, with k = (r − 1) / (r + 1):
+ *
+ *     sin θ = 2k · P / W
+ *
+ * and because we set the sign's perspective P equal to its width W above, that
+ * collapses to sin θ = 2k. r > 1 means the LEFT edge is nearer, which is a
+ * positive rotateY — so the sign leans exactly as its photograph does.
+ */
+/** The sign's box in WINDOW_H units — everything below is measured in these. */
+const SIGN_W_U = COLUMN_ASPECT * SIGN_SCALE;
+const SIGN_H_U = SIGN_W_U * (132 / 400); // the NeonSign viewBox aspect
+
+/** The four clip corners as fractions: [TL, TR, BR, BL]. */
+function clipCorners(clip: string): [number, number][] {
+  const n = clip.match(/-?[\d.]+(?=%)/g)?.map(Number) ?? [];
+  return [
+    [n[0] / 100, n[1] / 100],
+    [n[2] / 100, n[3] / 100],
+    [n[4] / 100, n[5] / 100],
+    [n[6] / 100, n[7] / 100],
+  ];
+}
+
+/** Where two lines cross, each given by two points. */
+function intersect(
+  a: [number, number], b: [number, number],
+  c: [number, number], d: [number, number],
+): [number, number] {
+  const den = (a[0] - b[0]) * (c[1] - d[1]) - (a[1] - b[1]) * (c[0] - d[0]);
+  const p = a[0] * b[1] - a[1] * b[0];
+  const q = c[0] * d[1] - c[1] * d[0];
+  return [(p * (c[0] - d[0]) - (a[0] - b[0]) * q) / den, (p * (c[1] - d[1]) - (a[1] - b[1]) * q) / den];
+}
+
+/**
+ * ── WHERE THE CAMERA STANDS ──────────────────────────────────────────────────
+ *
+ * The angle alone is not enough. Left at its default, `perspective-origin` puts
+ * the camera at the centre of the SIGN, giving the sign a private horizon: its
+ * horizontal lines stay symmetric about its own midline, so it foreshortens
+ * left-to-right but never slopes, and it reads as a flat card floating in front
+ * of the building instead of signage bolted to it.
+ *
+ * The window's real horizon is where its top and bottom edges converge — the
+ * vanishing point of the wall. Extending those two clip edges until they cross
+ * gives it exactly. We then re-express that point inside the sign's own box
+ * (the sign is centred over the glass and sits flush above it) and place the
+ * camera so the sign's horizontals converge on the same point.
+ *
+ * For a plane turned by θ under perspective P, the vanishing point of its
+ * horizontals lands at (originX + P·cot θ, originY). So:
+ *
+ *     originY = the wall's vanishing point, in sign-box units
+ *     originX = vanishingPointX − P·cot θ
+ *
+ * The near/far ratio is untouched by this — it depends only on depth, so the
+ * foreshortening angleFromClip() derived still holds. Returned as percentages,
+ * which are relative to the sign's own box and therefore survive every viewport.
+ */
+function cameraFromClip(clip: string, aspect: number, angleDeg: number) {
+  const [tl, tr, br, bl] = clipCorners(clip);
+  // Into WINDOW_H units: the window is `aspect` wide and 1 tall.
+  const u = ([x, y]: [number, number]): [number, number] => [x * aspect, y];
+  const vp = intersect(u(tl), u(tr), u(bl), u(br));
+
+  // Re-express in the sign's box: centred on the glass, sitting directly above.
+  const vpX = vp[0] + (SIGN_W_U - aspect) / 2;
+  const vpY = vp[1] + SIGN_H_U;
+
+  // P equals the sign's width — see SIGN_PERSPECTIVE.
+  const originX = vpX - SIGN_W_U / Math.tan((angleDeg * Math.PI) / 180);
+  return {
+    x: +((100 * originX) / SIGN_W_U).toFixed(2),
+    y: +((100 * vpY) / SIGN_H_U).toFixed(2),
+  };
+}
+
+function angleFromClip(clip: string): number {
+  const nums = clip.match(/-?[\d.]+(?=%)/g)?.map(Number) ?? [];
+  if (nums.length < 8) return 0;
+  const [, tlY, , trY, , brY, , blY] = nums; // TL TR BR BL, x/y interleaved
+  const leftH = blY - tlY;
+  const rightH = brY - trY;
+  if (leftH <= 0 || rightH <= 0) return 0;
+
+  const r = leftH / rightH;
+  const k = (r - 1) / (r + 1);
+  // Clamp: a ratio steeper than the perspective can express has no solution,
+  // and asin(>1) is NaN. Degrade to edge-on rather than to a broken transform.
+  const sin = Math.max(-1, Math.min(1, 2 * k));
+  return (Math.asin(sin) * 180) / Math.PI;
+}
+
 const DOORS = {
   left: {
     id: 'left' as const,
@@ -36,19 +182,15 @@ const DOORS = {
     tint: '124, 255, 178', // mint
     text: '#CFFFE4',
     img: '/img/window-left',
-    ratio: '730 / 984',
+    ratio: '715 / 980',
+    aspect: 715 / 980,
     /**
-     * The frame is a photographed trapezoid. Corners were read off a 5% grid
-     * overlay and PROVEN with scripts/preview-clip.mjs (paints everything
-     * outside the quad red — any sliver of scene inside, or over-cut frame,
-     * shows instantly). This window is viewed from its left: the left edge is
-     * nearer, top edge falls ~2% across. Re-measure if the render changes.
+     * Measured with probe-edges.mjs (the frame is dark-on-dark, so the quad
+     * fitter cannot see it) and proven with the red-mask preview. Photographed
+     * from its LEFT, so the near edge is longer: the window is 84% tall down
+     * the left side and 72% down the right.
      */
-    clip: 'polygon(0.5% 0.5%, 99.3% 2.6%, 99% 97.1%, 0.7% 99.2%)',
-    /** The photo's own perspective: left edge nearer → the sign hangs at the
-        same angle, H closer to the viewer than the Y. Positive rotateY brings
-        the LEFT edge toward the camera. */
-    signAngle: 14,
+    clip: 'polygon(0% 0.5%, 99.9% 12.8%, 99.9% 85%, 0% 99%)',
     external: false,
   },
   right: {
@@ -61,6 +203,7 @@ const DOORS = {
     text: '#FFD5E4',
     img: '/img/window-right',
     ratio: '2124 / 2360',
+    aspect: 2124 / 2360,
     /**
      * Fitted by scripts/fit-quad.mjs on the final crop (41/41 edge inliers) and
      * proven with the red-mask preview: the quad's top and bottom run PARALLEL
@@ -69,11 +212,30 @@ const DOORS = {
      * the crop's full width, so the sides sit at 0/100%.
      */
     clip: 'polygon(0% 11.1%, 100% 0.8%, 100% 97.4%, 0% 87.7%)',
-    // Mirror of the left: right edge nearer, so the sign's last letters sit
-    // closest to the viewer. Negative rotateY brings the RIGHT edge forward.
-    signAngle: -14,
     external: true,
   },
+};
+
+/**
+ * Each sign's idle rotation, read off its own window. Computed once at module
+ * load — the clips are constants, so this never needs to run again, and the
+ * angle can never drift out of step with a re-measured crop.
+ *
+ *   left  +17.9°  (left edge nearer — the H sits closer than the Y)
+ *   right −13.3°  (right edge nearer — mirrored, as the render is)
+ */
+const SIGN_ANGLE: Record<Side, number> = {
+  left: angleFromClip(DOORS.left.clip),
+  right: angleFromClip(DOORS.right.clip),
+};
+
+/**
+ * Camera position per sign, so each one converges on its own window's
+ * vanishing point rather than on its own centre. See cameraFromClip.
+ */
+const SIGN_CAMERA: Record<Side, { x: number; y: number }> = {
+  left: cameraFromClip(DOORS.left.clip, DOORS.left.aspect, SIGN_ANGLE.left),
+  right: cameraFromClip(DOORS.right.clip, DOORS.right.aspect, SIGN_ANGLE.right),
 };
 
 /* ── The cannabis-leaf tube from the client's prepped mockup ── */
@@ -161,7 +323,11 @@ function NeonSign({
               >
                 HIGH SOCIETY
               </text>
-              <line x1="76" y1="108" x2="150" y2="108" stroke={l.fill} strokeWidth="1.2" />
+              {/* Rules run out to SIGN_BOX_L, matching HIGH SOCIETY's measured
+                  extent above, so the sign fills a rectangle instead of
+                  tapering to a narrow base. Inner ends stop 11.1 units clear of
+                  GOODS (measured x161.1–238.9 via getBBox). */}
+              <line x1="44" y1="108" x2="150" y2="108" stroke={l.fill} strokeWidth="1.2" />
               <text
                 x="200"
                 y="113"
@@ -174,7 +340,7 @@ function NeonSign({
               >
                 GOODS
               </text>
-              <line x1="250" y1="108" x2="324" y2="108" stroke={l.fill} strokeWidth="1.2" />
+              <line x1="250" y1="108" x2="356" y2="108" stroke={l.fill} strokeWidth="1.2" />
             </>
           ) : (
             <>
@@ -184,16 +350,22 @@ function NeonSign({
                 textAnchor="middle"
                 fill={l.fill}
                 style={{
-                  font: 'italic 300 52px var(--font-serif)',
+                  /* 60px, not 52: at 52 the title measured x64–334 while the
+                     rules below ran x42–358, so the sign flared OUTWARD at the
+                     base — the mirror of the left sign's inward taper. 60px
+                     brings it to the shared x44–356 box. */
+                  font: 'italic 300 60px var(--font-serif)',
                   letterSpacing: '0.03em',
                 }}
               >
                 Bud &amp; Bloom
               </text>
-              {/* Rules end at x=118/282: "FLOWER SHOP" at 13px with 0.42em
-                  tracking spans ~x120–280 (measured via getBBox), so the previous
-                  straight through the F and the P — the "strikethrough". */}
-              <line x1="42" y1="104" x2="108" y2="104" stroke={l.fill} strokeWidth="1.2" />
+              {/* Inner ends at x=108/292: "FLOWER SHOP" at 13px with 0.42em
+                  tracking measures x119.8–280.2 via getBBox, so ending here
+                  keeps 11.8 units clear either side. Earlier values ran the
+                  rules straight through the F and the P — the "strikethrough".
+                  Outer ends match the title above, for a rectangular sign. */}
+              <line x1="44" y1="104" x2="108" y2="104" stroke={l.fill} strokeWidth="1.2" />
               <text
                 x="200"
                 y="109"
@@ -206,7 +378,7 @@ function NeonSign({
               >
                 FLOWER SHOP
               </text>
-              <line x1="292" y1="104" x2="358" y2="104" stroke={l.fill} strokeWidth="1.2" />
+              <line x1="292" y1="104" x2="356" y2="104" stroke={l.fill} strokeWidth="1.2" />
             </>
           )}
         </g>
@@ -218,12 +390,15 @@ function NeonSign({
 function Window({
   door,
   state,
+  angle,
   onEnter,
   onLeave,
   onSelect,
 }: {
   door: (typeof DOORS)[Side];
   state: DoorState;
+  /** Idle lean of the sign. Derived from the clip; the ?tune panel overrides it. */
+  angle: number;
   onEnter: () => void;
   onLeave: () => void;
   onSelect: () => void;
@@ -234,6 +409,8 @@ function Window({
   const dimmed = state === 'dimmed';
   const warm = state === 'hover' || open;
   const live = Boolean(door.href);
+  /** Hold everything at rest: no JS yet, or the visitor asked for less motion. */
+  const still = reduce || !mounted;
 
   // The door turns toward the centre of the street; the sign counter-rotates by
   // the same angle when open, so it faces the camera dead-on while the window
@@ -258,11 +435,33 @@ function Window({
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       aria-label={door.label}
-      className={`group relative block w-full max-w-[520px] outline-none ${live ? '' : 'cursor-default'}`}
-      style={{ transformStyle: 'preserve-3d' }}
+      className={`group relative block outline-none ${live ? '' : 'cursor-default'}`}
+      /**
+       * The column is sized FROM the window: its height is capped so the sign,
+       * glass and button all sit on one screen without scrolling, and the width
+       * follows from the photograph's aspect. Both windows share a height so
+       * their buttons line up; their widths differ because the two photographs
+       * do — which is honest to them, and reads as two real shopfronts.
+       */
+      style={{
+        transformStyle: 'preserve-3d',
+        width: COLUMN_W,
+        maxWidth: '100%',
+      }}
+      /**
+       * Every key is ALWAYS present, and `still` collapses them to the rest
+       * pose. Never `animate={}`: an element that mounts with an empty target
+       * registers no animatable values, and keys introduced on a later render
+       * are then never written — which left the whole street inert (no dim, no
+       * turn, no swing) while the home page animated fine.
+       *
+       * `initial={false}` is safe here precisely because rest IS the neutral
+       * pose, so the static export ships no hidden styles.
+       */
+      initial={false}
       animate={
-        reduce || !mounted
-          ? {}
+        still
+          ? { rotateY: 0, y: 0, scale: 1, opacity: 1 }
           : {
               rotateY: open ? turn : 0,
               y: open ? -12 : 0,
@@ -278,31 +477,55 @@ function Window({
           On hover it comes forward with a swing (spring overshoot) toward the
           camera; on select it counter-rotates the door's turn to face the
           viewer dead-on and grows. ── */}
-      <motion.div
-        className="relative z-10 mx-auto w-[86%]"
-        style={{ transformStyle: 'preserve-3d', transformOrigin: '50% 100%' }}
-        initial={false}
-        animate={
-          reduce || !mounted
-            ? {}
-            : open
-              ? { rotateY: -turn, scale: 1.15, y: -5, z: 60 }
-              : warm
-                ? { rotateY: 0, scale: 1.07, y: -2, z: 46 }
-                : { rotateY: door.signAngle, scale: 1, y: 0, z: 0 }
-        }
-        transition={{ type: 'spring', stiffness: 150, damping: 15 }}
+      {/* The sign carries its OWN perspective — see SIGN_PERSPECTIVE. It is
+          wider than the column, so it hangs into the street the way a real
+          shopfront sign overhangs its window; centred by translate rather than
+          auto margins, which collapse to zero once the child overflows. */}
+      <div
+        className="relative left-1/2 z-10 -translate-x-1/2"
+        style={{
+          width: SIGN_W,
+          perspective: SIGN_PERSPECTIVE,
+          perspectiveOrigin: `${SIGN_CAMERA[door.id].x}% ${SIGN_CAMERA[door.id].y}%`,
+        }}
       >
-        <NeonSign side={door.id} lit={warm} />
-      </motion.div>
+        {/* The lean is STATIC CSS, not an animated value. It is the sign's
+            resting geometry — it hangs in the window's plane — so it must be in
+            the first paint, survive prefers-reduced-motion, and survive JS never
+            arriving. Driving it through `animate` meant no transform was written
+            at all until something changed, and the signs sat dead flat. */}
+        <div style={{ transform: `rotateY(${angle}deg)`, transformStyle: 'preserve-3d' }}>
+          {/* Motion animates only the DEVIATION from that rest pose: on hover it
+              unwinds the lean to face the camera; on select it unwinds the
+              door's turn as well. Idle is 0 — no transform needed. */}
+          <motion.div
+            style={{ transformOrigin: '50% 100%' }}
+            initial={false}
+            animate={
+              still || (!open && !warm)
+                ? { rotateY: 0, scale: 1, y: 0 }
+                : open
+                  ? { rotateY: -angle - turn, scale: 1.15, y: -5 }
+                  : { rotateY: -angle, scale: 1.07, y: -2 }
+            }
+            transition={{ type: 'spring', stiffness: 150, damping: 15 }}
+          >
+            <NeonSign side={door.id} lit={warm} />
+          </motion.div>
+        </div>
+      </div>
 
       {/* ── The glass window — one image, lit entirely by filters ──
           The frame is a photographed trapezoid, so the cutout is a measured
           clip-path on the inner box, and the glow is drop-shadow on THIS outer
           wrapper — drop-shadow follows the clipped silhouette, where box-shadow
           would draw a rectangle around a non-rectangular window. */}
+      {/* Flush, no negative margin: cameraFromClip derives the camera assuming
+          the sign sits directly on top of the glass. A 4px overlap here put the
+          sign's vanishing point 4px off the window's — small, but it is exactly
+          the kind of drift that makes two objects stop sharing a plane. */}
       <div
-        className="relative -mt-1"
+        className="relative"
         style={{
           filter: open
             ? `drop-shadow(0 30px 60px rgba(0,0,0,.85)) drop-shadow(0 0 46px rgba(${door.tint},.34))`
@@ -313,8 +536,11 @@ function Window({
         }}
       >
       <div
-        className="relative overflow-hidden"
+        className="relative mx-auto overflow-hidden"
         style={{
+          height: WINDOW_H,
+          width: `calc(${WINDOW_H} * ${door.aspect})`,
+          maxWidth: '100%',
           aspectRatio: door.ratio,
           clipPath: door.clip,
         }}
@@ -377,7 +603,7 @@ function Window({
 
       {/* ── The CTA — a neon box below the glass ── */}
       <div
-        className="mx-auto mt-5 flex w-[74%] items-center justify-center px-6 py-4 text-center font-display text-[12px] tracking-[0.38em] uppercase"
+        className="mx-auto mt-4 flex w-[74%] items-center justify-center px-6 py-3 text-center font-display text-[12px] tracking-[0.38em] uppercase"
         style={{
           color: warm ? door.text : `rgba(${door.tint},.5)`,
           border: `1px solid rgba(${door.tint},${warm ? 0.75 : 0.28})`,
@@ -404,9 +630,65 @@ function Window({
   );
 }
 
+/**
+ * Angle tuner — visit /choice/?tune to drag the signs and read exact values.
+ *
+ * Development instrument, not a feature. It is gated on the query string and
+ * read AFTER mount, so it never renders for a visitor and never reaches the
+ * static HTML. Once a value here looks right, paste it into SIGN_ANGLE (or,
+ * better, fix the clip it was derived from — the derivation is the source of
+ * truth and the slider is only a second opinion on it).
+ */
+function Tuner({
+  angles,
+  derived,
+  onChange,
+}: {
+  angles: Record<Side, number>;
+  derived: Record<Side, number>;
+  onChange: (side: Side, v: number) => void;
+}) {
+  return (
+    <div className="fixed bottom-4 left-4 z-50 w-72 rounded-lg border border-gold/40 bg-black/90 p-4 font-mono text-[11px] text-bone/85 backdrop-blur">
+      <p className="mb-3 tracking-[0.2em] text-gold uppercase">Sign angle</p>
+      {(['left', 'right'] as Side[]).map((side) => (
+        <label key={side} className="mb-3 block">
+          <span className="flex justify-between">
+            <span>{side === 'left' ? 'HIGH SOCIETY' : 'Bud &amp; Bloom'}</span>
+            <span className="text-gold-lit">{angles[side].toFixed(1)}°</span>
+          </span>
+          <input
+            type="range"
+            min={-45}
+            max={45}
+            step={0.5}
+            value={angles[side]}
+            onChange={(e) => onChange(side, Number(e.target.value))}
+            className="mt-1 w-full accent-gold"
+          />
+          <span className="text-bone/45">
+            derived from clip: {derived[side].toFixed(1)}°
+          </span>
+        </label>
+      ))}
+      <p className="mt-3 border-t border-gold/20 pt-2 leading-relaxed text-bone/50">
+        Hover a window to see the swing. Values are idle-state only.
+      </p>
+    </div>
+  );
+}
+
 export default function ShopChoice() {
   const [hovered, setHovered] = useState<Side | null>(null);
   const [opened, setOpened] = useState<Side | null>(null);
+  const [tuning, setTuning] = useState(false);
+  const [angles, setAngles] = useState<Record<Side, number>>(SIGN_ANGLE);
+
+  // After mount only: the query string does not exist during the static export,
+  // so reading it in render would desync hydration.
+  useEffect(() => {
+    setTuning(new URLSearchParams(window.location.search).has('tune'));
+  }, []);
 
   useEffect(() => {
     if (!opened) return;
@@ -425,7 +707,7 @@ export default function ShopChoice() {
 
   return (
     <div
-      className="relative flex min-h-screen flex-col items-center px-5 py-14 sm:py-20"
+      className="relative flex min-h-screen flex-col items-center px-5 py-10 sm:py-14"
       onClick={(e) => {
         if (e.target === e.currentTarget) setOpened(null);
       }}
@@ -439,13 +721,16 @@ export default function ShopChoice() {
         }}
       />
 
-      <header className="relative flex flex-col items-center gap-5 text-center">
+      {/* Kept deliberately compact: the sign, the glass and the button have to
+          share one screen on a 720px-tall laptop, and the lockup is square — so
+          every pixel of its width costs the same in height. */}
+      <header className="relative flex flex-col items-center gap-3 text-center">
         <img
           src="/img/lockup-640.webp"
           alt="The Roach"
           width={640}
           height={640}
-          className="w-[120px] select-none sm:w-[165px]"
+          className="w-[92px] select-none sm:w-[112px]"
           style={{ filter: 'drop-shadow(0 0 40px rgba(201,162,39,.25))' }}
           draggable={false}
         />
@@ -456,54 +741,95 @@ export default function ShopChoice() {
           </span>
           <span className="h-px w-8 bg-gradient-to-l from-transparent to-gold/70 sm:w-20" />
         </div>
-        <p className="font-serif max-w-xl text-lg leading-relaxed font-light text-bone/60 italic sm:text-xl">
+        <p className="font-serif max-w-xl text-base leading-relaxed font-light text-bone/60 italic sm:text-lg">
           Step off the street and choose your entrance — the goods counter, or the growers’ room.
         </p>
       </header>
 
       {/* The street: shared perspective so the windows genuinely face each other */}
       <div
-        className="relative mt-12 flex w-full max-w-[1240px] flex-col items-center justify-center gap-12 sm:mt-16 lg:flex-row lg:items-start lg:gap-5"
+        className="relative mt-6 flex w-full max-w-[1240px] flex-col items-center justify-center gap-14 sm:mt-8 lg:flex-row lg:items-start lg:gap-[clamp(72px,10vw,180px)]"
         style={{ perspective: 1800 }}
         onMouseLeave={() => setHovered(null)}
       >
         <Window
           door={DOORS.left}
           state={stateFor('left')}
+          angle={angles.left}
           onEnter={() => setHovered('left')}
           onLeave={() => setHovered(null)}
           onSelect={() => setOpened('left')}
         />
 
-        <div aria-hidden className="hidden flex-col items-center gap-5 self-stretch py-16 lg:flex">
-          <span className="w-px flex-1 bg-gradient-to-b from-transparent to-gold/45" />
-          <span
-            className="font-serif text-base tracking-[0.24em] text-gold/85 italic"
-            style={{ writingMode: 'vertical-rl' }}
-          >
-            choose
-          </span>
-          <span className="w-px flex-1 bg-gradient-to-t from-transparent to-gold/45" />
-        </div>
-
         <Window
           door={DOORS.right}
           state={stateFor('right')}
+          angle={angles.right}
           onEnter={() => setHovered('right')}
           onLeave={() => setHovered(null)}
           onSelect={() => setOpened('right')}
         />
       </div>
 
-      <footer className="relative mt-16 flex w-full max-w-[1240px] flex-col gap-4 border-t hairline pt-7 sm:flex-row sm:items-center sm:justify-between">
-        <span className="font-display text-[10px] tracking-[0.34em] text-bone/40 uppercase">
-          {brand.name} · {brand.strapline}
-        </span>
-        <span className="font-serif max-w-xl text-sm leading-relaxed text-bone/45 italic">
-          A private members’ collective, strictly {brand.minimumAge}+. Nothing on this page is an
-          offer of sale.
-        </span>
+      {/* Everything that used to live at the end of the story deck now lives
+          here, since this is where the journey actually ends. */}
+      <footer className="relative mt-14 flex w-full max-w-[840px] flex-col items-center gap-6 border-t hairline pt-10 text-center">
+        <p className="max-w-xl text-base leading-relaxed font-light text-bone/70">
+          We also make a podcast about all of this —{' '}
+          <a
+            href="/potcast/"
+            className="text-gold-lit underline-offset-4 outline-none hover:underline focus-visible:underline"
+          >
+            PotCast, Bra met ’n Bek
+          </a>
+          . Late-night thoughts, real conversations, raw truth. New episodes weekly.
+        </p>
+
+        <img
+          src="/img/badge-320.webp"
+          alt=""
+          width={320}
+          height={320}
+          className="mt-2 w-16 select-none opacity-90"
+          loading="lazy"
+          draggable={false}
+        />
+
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
+          <a
+            href={brand.instagram}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-display text-[11px] tracking-[0.3em] text-bone/60 uppercase outline-none transition-colors hover:text-gold focus-visible:text-gold"
+          >
+            Instagram
+          </a>
+          <span className="h-1 w-1 rounded-full bg-gold/40" aria-hidden />
+          <a
+            href={`mailto:${brand.email}`}
+            className="font-display text-[11px] tracking-[0.3em] text-bone/60 lowercase outline-none transition-colors hover:text-gold focus-visible:text-gold"
+          >
+            {brand.email}
+          </a>
+          <span className="h-1 w-1 rounded-full bg-gold/40" aria-hidden />
+          <span className="font-display text-[11px] tracking-[0.3em] text-bone/60 uppercase">
+            {brand.town} · Garden Route
+          </span>
+        </div>
+
+        <p className="max-w-md text-xs leading-relaxed font-light text-bone/65">
+          The Roach is a private adult collective. Nothing is offered for sale on this website.
+          Strictly {brand.minimumAge}+. Enjoyed in private, as the law intends.
+        </p>
       </footer>
+
+      {tuning && (
+        <Tuner
+          angles={angles}
+          derived={SIGN_ANGLE}
+          onChange={(side, v) => setAngles((a) => ({ ...a, [side]: v }))}
+        />
+      )}
     </div>
   );
 }

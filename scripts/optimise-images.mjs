@@ -162,7 +162,15 @@ const WINDOWS = [
   {
     file: 'theroachimages/newtheroachshopglasswindow.png',
     name: 'window-left',
-    rect: { left: 15, top: 84, width: 730, height: 984 },
+    /**
+     * This frame is dark-on-dark, so fit-quad.mjs cannot lock onto it (4–8
+     * inliers of 41). Measured instead with probe-edges.mjs, whose BOTTOM edge
+     * reading is clean and linear — 78.6% at x=15 falling to 71.1% at x=85 —
+     * and the consistent top samples (9.4 / 12.1 / 16.0), then proven with the
+     * red-mask preview. The window is genuinely taller on the left than the
+     * right: it is photographed from its left, so the near edge is longer.
+     */
+    rect: { left: 15, top: 105, width: 715, height: 980 },
   },
   {
     file: 'theroachimages/theroachwhatsappglasswindownew.png',
