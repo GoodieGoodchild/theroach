@@ -150,16 +150,24 @@ console.log('favicon  → src/app/icon.png');
  *   left  content: x 6–739,  y 180–956
  *   right content: x 1–751,  y 265–~975 (bbox to 1291 is floor glow)
  */
+/**
+ * Crop rects were read off a 5% grid overlay and then VERIFIED with
+ * scripts/preview-clip.mjs, which paints everything outside the clip quad red —
+ * the automated edge-fit was unreliable on these renders (lit content below
+ * the frames poisoned the regression). If a source changes: grid-overlay.mjs to
+ * read the corners, preview-clip.mjs to prove them, then update here AND the
+ * matching clip polygons in src/components/ShopChoice.tsx.
+ */
 const WINDOWS = [
   {
-    file: 'theroachimages/theroachshopglasswindow.png',
+    file: 'theroachimages/newtheroachshopglasswindow.png',
     name: 'window-left',
-    rect: { left: 2, top: 176, width: 744, height: 786 },
+    rect: { left: 15, top: 84, width: 730, height: 984 },
   },
   {
-    file: 'theroachimages/theroachwhatsappglasswindow.png',
+    file: 'theroachimages/theroachwhatsappglasswindownew.png',
     name: 'window-right',
-    rect: { left: 0, top: 244, width: 752, height: 740 },
+    rect: { left: 50, top: 740, width: 2070, height: 2280 },
   },
 ];
 for (const { file, name, rect } of WINDOWS) {

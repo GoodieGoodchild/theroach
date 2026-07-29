@@ -36,15 +36,19 @@ const DOORS = {
     tint: '124, 255, 178', // mint
     text: '#CFFFE4',
     img: '/img/window-left',
-    ratio: '744 / 786',
+    ratio: '730 / 984',
     /**
-     * The window is photographed at an angle, so its frame is a trapezoid, not
-     * a rectangle. Corners were MEASURED by least-squares fitting the frame's
-     * four lit edges and intersecting them (left window is viewed from the
-     * left: top edge falls 13% across the width). Everything outside this quad
-     * is scene, and gets clipped. Re-measure if the source render changes.
+     * The frame is a photographed trapezoid. Corners were read off a 5% grid
+     * overlay and PROVEN with scripts/preview-clip.mjs (paints everything
+     * outside the quad red — any sliver of scene inside, or over-cut frame,
+     * shows instantly). This window is viewed from its left: the left edge is
+     * nearer, top edge falls ~2% across. Re-measure if the render changes.
      */
-    clip: 'polygon(0.4% 0%, 99.2% 13.1%, 99.2% 88.5%, 0.7% 99.2%)',
+    clip: 'polygon(0.5% 0.5%, 99.3% 2.6%, 99% 97.1%, 0.7% 99.2%)',
+    /** The photo's own perspective: left edge nearer → the sign hangs at the
+        same angle, H closer to the viewer than the Y. Positive rotateY brings
+        the LEFT edge toward the camera. */
+    signAngle: 14,
     external: false,
   },
   right: {
@@ -56,10 +60,13 @@ const DOORS = {
     tint: '255, 143, 184', // rose
     text: '#FFD5E4',
     img: '/img/window-right',
-    ratio: '752 / 740',
-    // Measured like the left. This one is viewed from the right: the top edge
-    // rises 11% across, the bottom is near-flat.
-    clip: 'polygon(1.1% 14.4%, 100% 3%, 100% 97.8%, 1.1% 98%)',
+    ratio: '2070 / 2280',
+    // Measured and proven like the left. This render is viewed from its right:
+    // the right edge is nearer — top rises ~9% across, bottom falls ~8%.
+    clip: 'polygon(0.5% 10.1%, 99.3% 0.9%, 99.4% 98.6%, 0.4% 90.8%)',
+    // Mirror of the left: right edge nearer, so the sign's last letters sit
+    // closest to the viewer. Negative rotateY brings the RIGHT edge forward.
+    signAngle: -14,
     external: true,
   },
 };
@@ -260,24 +267,26 @@ function Window({
       }
       transition={{ duration: 0.9, ease: [0.2, 0.7, 0.2, 1] }}
     >
-      {/* ── The sign — hangs on the window's own plane, and only moves when
-          activated. At idle it has NO rotation of its own (an angled sign over
-          a flat window read as being on a different axis). On select it turns
-          toward the camera — counter-rotating the door's 13° so it faces the
-          viewer dead-on — and enlarges a little. ── */}
+      {/* ── The sign — hangs IN the window's own perspective at idle: the same
+          angle and depth as the photograph beneath it, so on the left the H of
+          HIGH SOCIETY sits nearer the viewer than the Y, mirrored on the right.
+          On hover it comes forward with a swing (spring overshoot) toward the
+          camera; on select it counter-rotates the door's turn to face the
+          viewer dead-on and grows. ── */}
       <motion.div
         className="relative z-10 mx-auto w-[86%]"
         style={{ transformStyle: 'preserve-3d', transformOrigin: '50% 100%' }}
+        initial={false}
         animate={
           reduce || !mounted
             ? {}
             : open
-              ? { rotateY: -turn, scale: 1.14, y: -5 }
+              ? { rotateY: -turn, scale: 1.15, y: -5, z: 60 }
               : warm
-                ? { rotateY: 0, scale: 1.05, y: -2 }
-                : { rotateY: 0, scale: 1, y: 0 }
+                ? { rotateY: 0, scale: 1.07, y: -2, z: 46 }
+                : { rotateY: door.signAngle, scale: 1, y: 0, z: 0 }
         }
-        transition={{ type: 'spring', stiffness: 170, damping: 19 }}
+        transition={{ type: 'spring', stiffness: 150, damping: 15 }}
       >
         <NeonSign side={door.id} lit={warm} />
       </motion.div>
