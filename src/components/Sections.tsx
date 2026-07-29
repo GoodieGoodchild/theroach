@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, useReducedMotion } from 'motion/react';
-import { brand, waLink } from '@/lib/config';
+import { brand } from '@/lib/config';
 import { useMounted } from '@/lib/useMounted';
 import type { Section } from './Deck';
 
@@ -228,43 +228,19 @@ export const sections: Section[] = [
           </p>
         </Stagger>
 
+        {/* The badge, Instagram, the email address and the town used to sit
+            here as well as on /choice. Duplicating them cost this section the
+            height it needed and gave the visitor the same details twice, one
+            screen apart. They now live only behind "Step off the street",
+            which is where someone actually looking to make contact ends up.
+
+            The disclaimer STAYS. It is the compliance line, and this is the
+            indexed page — it has to be readable without following a link. */}
         <Stagger delay={0.5}>
-          <div className="mt-14 flex flex-col items-center gap-5">
-            <img
-              src="/img/badge-320.webp"
-              alt="The Roach — crafted for the collective"
-              width={320}
-              height={320}
-              className="w-20 select-none opacity-90"
-              loading="lazy"
-              draggable={false}
-            />
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
-              <a
-                href={brand.instagram}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-display text-[11px] tracking-[0.3em] text-bone/60 uppercase outline-none transition-colors hover:text-gold focus-visible:text-gold"
-              >
-                Instagram
-              </a>
-              <span className="h-1 w-1 rounded-full bg-gold/40" aria-hidden />
-              <a
-                href={`mailto:${brand.email}`}
-                className="font-display text-[11px] tracking-[0.3em] text-bone/60 lowercase outline-none transition-colors hover:text-gold focus-visible:text-gold"
-              >
-                {brand.email}
-              </a>
-              <span className="h-1 w-1 rounded-full bg-gold/40" aria-hidden />
-              <span className="font-display text-[11px] tracking-[0.3em] text-bone/60 uppercase">
-                {brand.town} · Garden Route
-              </span>
-            </div>
-            <p className="max-w-md text-xs font-light leading-relaxed text-bone/65">
-              The Roach is a private adult collective. Nothing is offered for sale on this website.
-              Strictly {brand.minimumAge}+. Enjoyed in private, as the law intends.
-            </p>
-          </div>
+          <p className="mx-auto mt-12 max-w-md text-xs leading-relaxed font-light text-bone/65">
+            The Roach is a private adult collective. Nothing is offered for sale on this website.
+            Strictly {brand.minimumAge}+. Enjoyed in private, as the law intends.
+          </p>
         </Stagger>
       </div>
     ),
