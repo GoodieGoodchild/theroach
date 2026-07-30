@@ -22,10 +22,16 @@ also carries mail for other domains.
 | Port | Owner | Notes |
 |---|---|---|
 | 80, 443 | **caddy 2.10** | Reverse proxy, provisions TLS automatically. Nothing else may bind these. |
-| 25, 465, 587, 110, 143, 993, 995 | **mailcow** | The mail stack. |
-| 8080, 8443 | mailcow UI | |
-| 8090 | webuild | Another site. |
+| 25, 465, 587, 110, 143, 993, 995, 4190 | **mailcow** | The mail stack (`nginx-mailcow`). Web UI at `https://mail.webuildit.co.za`, which Caddy proxies to `nginx-mailcow:8443`. **PTR for this IP is `mail.webuildit.co.za`** — see the mail section. |
+| 8090 | webuild | webuildit.co.za. |
 | 127.0.0.1:3010 | **theroach** | This site. Localhost-only on purpose — see §7. |
+
+Server is a **dedicated** xneelo box (Ubuntu 24.04), user `jonathan`,
+reached with `ssh jonathan@129.232.235.130`. Sites live under
+`/srv/infrastructure/sites/<name>`; the proxy under `/srv/docker/proxy/caddy`,
+whose Caddyfile is the single routing source of truth. Containers: `caddy`,
+`webuild`, `theroach`, `mailcow`, `devdash-agent`. Networks: `web`,
+`mailcowdockerized_mailcow-network`, `theroach_default`.
 
 The site container joins a shared Docker network called `web`. That is the only
 way Caddy can resolve the name `theroach`. **The `web` network is external** —
