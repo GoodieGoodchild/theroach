@@ -113,6 +113,16 @@ curl -s http://127.0.0.1:3010/choice/ | grep -o 'perspective-origin:[^;"]*' | so
 curl -sI http://127.0.0.1:3010/shop/ | head -1
 ```
 
+**Is the HTML still uncacheable?** This one is easy to regress and the damage
+only shows up for returning visitors, on their phones, an hour after a deploy:
+
+```bash
+curl -sI https://www.theroach.co.za/ | grep -i cache-control
+```
+
+It must say `no-cache`. If it says `max-age=` anything, stop and fix
+`docker/nginx.conf` — see the note in `location /`.
+
 **Through Caddy, from outside:**
 
 ```bash
@@ -317,6 +327,7 @@ the client's brand strategy and compliance reasoning.
 
 | Symptom | Likely cause | Check |
 |---|---|---|
+| **No landing video, story just scrolls** (usually only on a phone, only for people who visited before) | Cached HTML pointing at chunks a later deploy deleted, so JS 404s and React never hydrates. The no-JS fallback is what you are seeing. | `curl -sI https://www.theroach.co.za/ \| grep -i cache-control` — must say `no-cache`, never `max-age`. Confirm by opening the site in a private tab. |
 | Site unreachable, container healthy | Caddy can't resolve `theroach` | `docker network inspect web` — is the container attached? |
 | TLS error / cert expired | DNS moved, or :80 blocked so ACME fails | `nslookup theroach.co.za`; `docker logs caddy` |
 | Deploy "worked" but the change isn't live | Browser or `Cache-Control: immutable` on hashed assets | `curl` the marker string in §3, not the browser |
