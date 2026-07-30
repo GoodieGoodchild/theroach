@@ -292,16 +292,81 @@ the 410s. Leave it on localhost.
 
 ## 9. ⚠️ Known problems
 
-### Mail is pointed at the wrong machine — unresolved
+### Mail: `high@theroach.co.za` does not exist yet — procedure below
 
-**Verified 2026-07-29.** `theroach.co.za` MX → `mail.theroach.co.za` →
-`41.203.18.177`. That is xneelo **shared hosting**. mailcow runs on *this* box
-at `129.232.235.130`. So `high@theroach.co.za` cannot receive mail through
-mailcow as things stand.
+**Verified 2026-07-30.** `theroach.co.za` MX → `mail.theroach.co.za` →
+`41.203.18.177`, which is xneelo **shared hosting**, not this box. There is no
+SPF and no DMARC. The site publishes `high@theroach.co.za`, so anyone writing to
+it today is bouncing.
 
-Before changing the `mail` A record, **check whether mailcow serves other
-domains from that hostname** — repointing it will break their delivery too. This
-needs a proper look, not a quick edit.
+**The design decision, and why:**
+
+```
+PTR 129.232.235.130 → mail.webuildit.co.za     (verified)
+```
+
+An IP gets exactly ONE reverse-DNS name, and that one is already spoken for by
+mailcow's own hostname. So theroach's MX points at **`mail.webuildit.co.za`**,
+not at a new `mail.theroach.co.za`. An MX hostname does not have to match the
+domain it serves, and pointing it at the existing host means:
+
+- the TLS certificate already matches the MX name, so senders doing strict TLS
+  are satisfied — and **no new certificate is needed**, which matters because
+  Caddy owns :80 and mailcow's ACME cannot complete HTTP-01 behind it;
+- HELO matches PTR, the check most spam filters weigh heaviest;
+- no record another domain depends on is touched.
+
+`webuildit.co.za` is the working template: MX `mail.webuildit.co.za`, SPF
+`v=spf1 mx a -all`, DKIM selector `dkim`.
+
+**⚠️ Before anything: does mail already arrive for this domain?** The MX points
+at xneelo shared hosting, which usually means mailboxes exist in the xneelo
+control panel. Moving the MX stops that mail arriving, silently, with no bounce
+to the sender. Check the panel and ask the client which address he actually
+uses. Migrate first if anything is live.
+
+**1. Create it in mailcow** (`https://mail.webuildit.co.za`, port 8443 behind
+Caddy). Mail Setup → Domains → add `theroach.co.za`; Mailboxes → add
+`high@theroach.co.za`; ACL/DKIM → generate a 2048-bit key and copy the TXT.
+Adding a domain does not disturb the existing ones — mailcow is multi-tenant.
+
+**2. DNS, in this order.** Drop the MX record's TTL to 300 and wait out the old
+TTL first, so a mistake costs five minutes rather than hours.
+
+Add these three BEFORE touching the MX. None of them changes where mail is
+delivered, so they are safe to add while the old MX still stands:
+
+```
+dkim._domainkey.theroach.co.za  TXT  (value from mailcow)
+theroach.co.za                  TXT  v=spf1 ip4:129.232.235.130 ~all
+_dmarc.theroach.co.za           TXT  v=DMARC1; p=none; rua=mailto:high@theroach.co.za
+```
+
+⚠️ Use `ip4:` here, NOT webuildit's `mx` mechanism. `mx` resolves the domain's
+own MX — which, until the cutover, is still the wrong server. An SPF record
+built on `mx` would authorise 41.203.18.177 and fail to authorise mailcow.
+Switch to `v=spf1 mx a -all` after the MX has moved, if you want to match
+webuildit exactly.
+
+`~all` and `p=none` are deliberate: monitor first, tighten to `-all` and
+`p=quarantine` after a couple of weeks of clean reports. Going straight to
+strict is how people blackhole their own mail.
+
+**3. Cut over.** Change the MX to `mail.webuildit.co.za`, priority 10. This is
+the only step that moves delivery.
+
+**4. Verify.** Send from the new mailbox to mail-tester.com and expect 9+/10
+with SPF, DKIM and DMARC all passing, then send *to* it from Gmail and confirm
+arrival. Check outbound :25 is not blocked by the host:
+
+```bash
+timeout 5 bash -c 'cat < /dev/tcp/gmail-smtp-in.l.google.com/25'
+```
+
+A `220` banner means sending works; a hang means xneelo blocks it and needs to
+open it.
+
+Nothing here touches Caddy, the `web` network, or webuildit.
 
 ### `/choice/` was 404 in production as of 2026-07-29
 
