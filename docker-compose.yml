@@ -36,6 +36,18 @@ services:
       - /var/cache/nginx
       - /var/run
 
+    # ONE exception to read_only: the click counter.
+    #
+    # `docker compose up -d --build` REPLACES this container, and `docker logs`
+    # dies with it — so without a bind mount the WhatsApp click count would
+    # reset to zero on every deploy, which for a site that deploys often makes
+    # the number worthless. This survives rebuilds.
+    #
+    # The file holds a timestamp and a path, nothing else — no IPs, no user
+    # agents. See the `event` log format in docker/nginx.conf for why.
+    volumes:
+      - ./logs:/var/log/site
+
     security_opt:
       - no-new-privileges:true
 

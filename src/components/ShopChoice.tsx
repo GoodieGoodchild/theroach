@@ -181,6 +181,8 @@ const DOORS = {
   left: {
     id: 'left' as const,
     href: brand.shopUrl,
+    /** Counter name pinged when this door actually opens. See nginx.conf. */
+    track: 'shop',
     label: brand.shopUrl
       ? 'Enter the goods store — glass, grinders and papers'
       : 'The goods store is not open yet',
@@ -203,6 +205,8 @@ const DOORS = {
   right: {
     id: 'right' as const,
     href: waLink,
+    /** Counter name pinged when this door actually opens. See nginx.conf. */
+    track: 'whatsapp',
     label: 'Message the collective on WhatsApp',
     cta: 'WHATSAPP FOR MORE',
     caption: 'MEMBERS · BY ARRANGEMENT',
@@ -822,6 +826,15 @@ export default function ShopChoice() {
     //
     // Clearing up is handled by the blur/visibilitychange reset, which fires
     // once the new tab takes focus — off screen, where nobody sees it.
+    //
+    // One thing does happen: a fire-and-forget ping so the click can be
+    // counted. wa.me is off-site, so without this there is no way to know the
+    // button is ever used. sendBeacon is queued by the browser and survives the
+    // page being backgrounded when WhatsApp takes over; it cannot delay or
+    // block the navigation, and if it fails the link is entirely unaffected.
+    // The request carries no body — nginx logs a timestamp and the path, and
+    // nothing else. See the `event` log format.
+    navigator.sendBeacon?.(`/e/${DOORS[side].track}`);
   };
 
   const stateFor = (side: Side): DoorState => {

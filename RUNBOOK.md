@@ -145,6 +145,65 @@ Expected: `200`, then the marker string, then `410 Gone`, then `200`, then `301`
 
 ---
 
+## 3a. How many people clicked WhatsApp
+
+There is no Google Analytics, no Plausible, no third-party tag of any kind, and
+adding one would be the wrong call here: this is a cannabis collective, and
+handing a visitor list to an ad network is exactly the disclosure the whole site
+is built to avoid. Instead the page pings a first-party endpoint and nginx
+counts the pings.
+
+The log line is a timestamp and a path. **No IP, no user agent, no referrer, no
+cookie** — see the `event` log format in `docker/nginx.conf`. It answers "how
+many", never "who". That also means no cookie banner is required.
+
+Run these from the compose directory on the server.
+
+**Total clicks, all time:**
+
+```bash
+grep -c '/e/whatsapp' logs/events.log
+```
+
+**Per day, most recent last:**
+
+```bash
+grep '/e/whatsapp' logs/events.log | cut -c1-10 | sort | uniq -c
+```
+
+**This month:**
+
+```bash
+grep -c "^$(date +%Y-%m).*whatsapp" logs/events.log
+```
+
+**Both doors at once** — useful once the accessories store has a real URL, to
+see which storefront people actually pick:
+
+```bash
+awk '{print $2}' logs/events.log | sort | uniq -c | sort -rn
+```
+
+### What the number does and does not mean
+
+- It counts the click that **opens** WhatsApp. On a phone the first tap only
+  lights the shop up and is deliberately not counted, so this is intent, not
+  fidgeting.
+- It is a **floor, not a total**. The ping is `sendBeacon`, so it is lost if JS
+  does not run or a blocker eats it. That was the deliberate trade: routing the
+  link through this server would count perfectly but would put the box in the
+  middle of the client's only conversion path, and a broken WhatsApp button
+  costs a customer where a missed statistic costs nothing.
+- It does not tell you whether anyone actually sent a message. Only the client's
+  phone knows that. Worth asking him for that number occasionally and comparing
+  — the gap between clicks and conversations is the more interesting figure.
+
+`logs/` is bind-mounted so it survives `docker compose up --build`, which would
+otherwise discard the count on every deploy. Nothing rotates it yet; a line is
+about 40 bytes, so it will be years before that matters.
+
+---
+
 ## 4. Rolling back
 
 The image is built from a git commit, so rolling back is rolling git back.
