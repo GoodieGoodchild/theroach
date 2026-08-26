@@ -18,10 +18,28 @@ const OUT = 'public/sitemap.xml';
 const src = await readFile('src/lib/potcast.ts', 'utf8');
 const slugs = [...src.matchAll(/slug:\s*['"]([^'"]+)['"]/g)].map((m) => m[1]);
 
+// Blog posts are one markdown file each in content/blog/ — the filename IS the
+// slug, so the directory listing is the source of truth. Drafts are excluded
+// the same way the build excludes them: `published: false` in frontmatter.
+const { readdir } = await import('node:fs/promises');
+const postSlugs = [];
+try {
+  for (const f of await readdir('content/blog')) {
+    if (!f.endsWith('.md')) continue;
+    const body = await readFile(`content/blog/${f}`, 'utf8');
+    if (/^published:\s*false/m.test(body)) continue;
+    postSlugs.push(f.replace(/\.md$/, ''));
+  }
+} catch {
+  /* no blog directory yet — fine */
+}
+
 const pages = [
   { loc: '/', changefreq: 'monthly', priority: '1.0' },
   { loc: '/potcast/', changefreq: 'weekly', priority: '0.9' },
   ...slugs.map((s) => ({ loc: `/potcast/${s}/`, changefreq: 'monthly', priority: '0.7' })),
+  { loc: '/blog/', changefreq: 'weekly', priority: '0.9' },
+  ...postSlugs.map((s) => ({ loc: `/blog/${s}/`, changefreq: 'monthly', priority: '0.7' })),
 ];
 
 const xml =

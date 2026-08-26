@@ -179,6 +179,18 @@ const WINDOWS = [
     // frame's top-right corner (TR fitted to y=-1.8%) and left jamb (x=0.0).
     rect: { left: 18, top: 680, width: 2124, height: 2360 },
   },
+  {
+    file: 'theroachimages/bloggerinwindow.png',
+    name: 'window-blog',
+    /**
+     * The writer's booth. Photographed DEAD-ON (probe-edges: top edge level at
+     * 8.5–8.7% across the full width), so unlike the two shops there is no
+     * trapezoid — a straight rect, proven with two crop previews. Bottom stops
+     * where the base meets the floor; below is only reflection, which must go
+     * so the booth floats like its neighbours.
+     */
+    rect: { left: 93, top: 354, width: 1974, height: 2943 },
+  },
 ];
 for (const { file, name, rect } of WINDOWS) {
   try {

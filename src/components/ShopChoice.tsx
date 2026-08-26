@@ -28,7 +28,7 @@ import { useMounted } from '@/lib/useMounted';
  * a new tab and this page never navigates away on its own.
  */
 
-type Side = 'left' | 'right';
+type Side = 'left' | 'blog' | 'right';
 type DoorState = 'idle' | 'hover' | 'open' | 'dimmed';
 
 /**
@@ -144,6 +144,10 @@ function intersect(
  * which are relative to the sign's own box and therefore survive every viewport.
  */
 function cameraFromClip(clip: string, aspect: number, angleDeg: number) {
+  // A window photographed dead-on has no rotation and therefore no vanishing
+  // point — its edges are parallel and never converge. The maths below would
+  // divide by tan(0). The centre-default camera is simply correct here.
+  if (Math.abs(angleDeg) < 0.5) return { x: 50, y: 50 };
   const [tl, tr, br, bl] = clipCorners(clip);
   // Into WINDOW_H units: the window is `aspect` wide and 1 tall.
   const u = ([x, y]: [number, number]): [number, number] => [x * aspect, y];
@@ -202,6 +206,29 @@ const DOORS = {
     clip: 'polygon(0% 0.5%, 99.9% 12.8%, 99.9% 85%, 0% 99%)',
     external: false,
   },
+  blog: {
+    id: 'blog' as const,
+    href: '/blog/',
+    /** Counter name pinged when this door actually opens. See nginx.conf. */
+    track: 'blog',
+    label: 'Read the journal — notes from the collective',
+    cta: 'READ THE JOURNAL',
+    caption: 'NOTES · FROM THE CIRCLE',
+    tint: '255, 209, 102', // the street's own gold, lit
+    text: '#FFF3D6',
+    img: '/img/window-blog',
+    ratio: '1974 / 2943',
+    aspect: 1974 / 2943,
+    /**
+     * No trapezoid: the booth is photographed DEAD-ON (probe-edges read the
+     * top edge level at 8.5–8.7% across the full width), which is exactly
+     * right for the centre of the street — the two shops angle inward and the
+     * writer faces you straight. angleFromClip() reads 0° off this rect, so
+     * the sign hangs flat, and cameraFromClip() returns the centre camera.
+     */
+    clip: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)',
+    external: false,
+  },
   right: {
     id: 'right' as const,
     href: waLink,
@@ -237,6 +264,7 @@ const DOORS = {
  */
 const SIGN_ANGLE: Record<Side, number> = {
   left: angleFromClip(DOORS.left.clip),
+  blog: angleFromClip(DOORS.blog.clip), // 0 — photographed dead-on
   right: angleFromClip(DOORS.right.clip),
 };
 
@@ -246,6 +274,7 @@ const SIGN_ANGLE: Record<Side, number> = {
  */
 const SIGN_CAMERA: Record<Side, { x: number; y: number }> = {
   left: cameraFromClip(DOORS.left.clip, DOORS.left.aspect, SIGN_ANGLE.left),
+  blog: cameraFromClip(DOORS.blog.clip, DOORS.blog.aspect, SIGN_ANGLE.blog),
   right: cameraFromClip(DOORS.right.clip, DOORS.right.aspect, SIGN_ANGLE.right),
 };
 
@@ -283,8 +312,9 @@ function NeonSign({
   lit: boolean;
 }) {
   const mint = side === 'left';
-  const tube = mint ? '#EAFFF3' : '#FFF0F5';
-  const tint = mint ? '#7CFFB2' : '#FF8FB8';
+  const gold = side === 'blog';
+  const tube = mint ? '#EAFFF3' : gold ? '#FFF6DF' : '#FFF0F5';
+  const tint = mint ? '#7CFFB2' : gold ? '#FFD75E' : '#FF8FB8';
   const fid = `neon-${side}`;
 
   const layers = [
@@ -356,6 +386,44 @@ function NeonSign({
                 GOODS
               </text>
               <line x1="250" y1="108" x2="356" y2="108" stroke={l.fill} strokeWidth="1.2" />
+            </>
+          ) : gold ? (
+            <>
+              {/* The writer's booth. Same rectangle discipline as the shops:
+                  title and rules share the x44-356 box (tracking measured via
+                  getBBox, like both neighbours). */}
+              <text
+                x="200"
+                y="78"
+                textAnchor="middle"
+                fill={l.fill}
+                style={{
+                  /* 28px, not the 34 of THE ROACH: fifteen characters against
+                     nine. At 34px the glyphs alone measured 322 units and the
+                     title burst the box (1.4–397.2). 28px + 0.12em lands on
+                     the shared x44–356 rectangle. */
+                  font: '300 28px var(--font-display)',
+                  letterSpacing: '0.12em',
+                }}
+              >
+                THE DAILY ROACH
+              </text>
+              {/* Ends at 136/262: JOURNAL measures x147.3-251.2 via getBBox, so this
+                  keeps ~11 units clear either side, like both neighbours. */}
+              <line x1="44" y1="108" x2="136" y2="108" stroke={l.fill} strokeWidth="1.2" />
+              <text
+                x="200"
+                y="113"
+                textAnchor="middle"
+                fill={l.fill}
+                style={{
+                  font: '300 13px var(--font-display)',
+                  letterSpacing: '0.42em',
+                }}
+              >
+                JOURNAL
+              </text>
+              <line x1="262" y1="108" x2="356" y2="108" stroke={l.fill} strokeWidth="1.2" />
             </>
           ) : (
             <>
@@ -693,10 +761,10 @@ function Tuner({
   return (
     <div className="fixed bottom-4 left-4 z-50 w-72 rounded-lg border border-gold/40 bg-black/90 p-4 font-mono text-[11px] text-bone/85 backdrop-blur">
       <p className="mb-3 tracking-[0.2em] text-gold uppercase">Sign angle</p>
-      {(['left', 'right'] as Side[]).map((side) => (
+      {(['left', 'blog', 'right'] as Side[]).map((side) => (
         <label key={side} className="mb-3 block">
           <span className="flex justify-between">
-            <span>{side === 'left' ? 'THE ROACH' : 'The Joint'}</span>
+            <span>{side === 'left' ? 'THE ROACH' : side === 'blog' ? 'THE DAILY ROACH' : 'The Joint'}</span>
             <span className="text-gold-lit">{angles[side].toFixed(1)}°</span>
           </span>
           <input
@@ -888,7 +956,7 @@ export default function ShopChoice() {
 
       {/* The street: shared perspective so the windows genuinely face each other */}
       <div
-        className="relative mt-6 flex w-full max-w-[1240px] flex-col items-center justify-center gap-14 sm:mt-8 lg:flex-row lg:items-start lg:gap-[clamp(72px,10vw,180px)]"
+        className="relative mt-6 flex w-full max-w-[1240px] flex-col items-center justify-center gap-14 sm:mt-8 lg:flex-row lg:items-start lg:gap-[clamp(44px,5.5vw,110px)]"
         style={{ perspective: 1800 }}
         onMouseLeave={() => setHovered(null)}
       >
@@ -900,6 +968,18 @@ export default function ShopChoice() {
           onEnter={() => setHovered('left')}
           onLeave={() => setHovered(null)}
           onSelect={select('left')}
+        />
+
+        {/* The writer's booth, dead centre and facing the viewer square-on —
+            the two shops angle inward toward it. */}
+        <Window
+          door={DOORS.blog}
+          state={stateFor('blog')}
+          angle={angles.blog}
+          coarse={coarse}
+          onEnter={() => setHovered('blog')}
+          onLeave={() => setHovered(null)}
+          onSelect={select('blog')}
         />
 
         <Window
