@@ -38,3 +38,9 @@ logoassets/*[Pp]rice*
 # are kept locally but not worth carrying in git history.
 logoassets/theroach.mp4
 logoassets/roachjoint.mp4
+
+# Generated from content/blog/uploads by scripts/optimise-blog-media.mjs
+public/img/blog/
+
+# Server secrets (Decap OAuth app credentials live in .env on the box)
+.env

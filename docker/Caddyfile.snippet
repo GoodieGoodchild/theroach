@@ -6,6 +6,12 @@
 # first request, provided the DNS points here (see the note at the bottom).
 
 theroach.co.za, www.theroach.co.za {
+	# Decap CMS sign-in: /oauth/* goes to the one-file OAuth helper
+	# (docker/oauth/), everything else to the static site. handle_path
+	# strips the /oauth prefix, so the helper serves /auth and /callback.
+	handle_path /oauth/* {
+		reverse_proxy decap-oauth:3000
+	}
 	reverse_proxy theroach:80
 }
 

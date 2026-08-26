@@ -64,6 +64,31 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # ── Decap CMS OAuth helper ─────────────────────────────────────────────────
+  # The journal desk at /admin/ signs the owner in with GitHub; this tiny
+  # container (docker/oauth/ — one dependency-free file) does the token
+  # exchange. Caddy routes /oauth/* to it. Secrets come from .env on the
+  # server, which is NOT in git:
+  #   DECAP_GITHUB_CLIENT_ID=...
+  #   DECAP_GITHUB_CLIENT_SECRET=...
+  decap-oauth:
+    build: ./docker/oauth
+    container_name: decap-oauth
+    restart: unless-stopped
+    networks:
+      - web
+    environment:
+      OAUTH_CLIENT_ID: ${DECAP_GITHUB_CLIENT_ID}
+      OAUTH_CLIENT_SECRET: ${DECAP_GITHUB_CLIENT_SECRET}
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
 networks:
   web:
     # Created already by whatever brought Caddy up — do not let compose make a

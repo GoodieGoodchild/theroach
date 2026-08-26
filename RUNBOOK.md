@@ -204,6 +204,52 @@ about 40 bytes, so it will be years before that matters.
 
 ---
 
+## 3b. The journal CMS — /admin/
+
+The owner writes The Daily Roach from `https://www.theroach.co.za/admin/` —
+Decap CMS, phone-friendly, hidden by not being linked anywhere and noindexed.
+The real lock is GitHub: the page is useless without a GitHub login that has
+write access to the repo. Every save is a git commit to `main`; the deploy
+watch (below) rebuilds the site.
+
+Uploads are committed raw to `content/blog/uploads/` and **shrunk at build**
+into `public/img/blog/` (images capped at 1600px, .mp4 at 1280px H.264;
+anything else fails the build with instructions). The pricing guard scans the
+result, so even a pricelist uploaded by accident stops the deploy.
+
+### One-time setup (not done yet)
+
+1. **GitHub OAuth app** — github.com → Settings → Developer settings → OAuth
+   Apps → New. Homepage `https://www.theroach.co.za`, callback
+   `https://www.theroach.co.za/oauth/callback`. Note the client id + secret.
+2. **`.env` on the server**, next to docker-compose.yml (never in git):
+   ```
+   DECAP_GITHUB_CLIENT_ID=...
+   DECAP_GITHUB_CLIENT_SECRET=...
+   ```
+3. **Caddyfile** — add the `/oauth/*` handle from `docker/Caddyfile.snippet`
+   to `/srv/docker/proxy/caddy/Caddyfile`, then `docker exec caddy caddy reload
+   --config /etc/caddy/Caddyfile` (adjust to how caddy is run).
+4. **The owner's GitHub account** — create one for the client if he has none,
+   add it as a collaborator on the repo (Settings → Collaborators). That grant
+   is the access control; removing it revokes the CMS.
+5. `docker compose up -d --build` to start the `decap-oauth` container.
+
+### Deploy watch — publishes the owner's posts
+
+CMS commits land on GitHub; nothing rebuilds unless the server notices. Cron,
+every 10 minutes, as the deploy user:
+
+```bash
+*/10 * * * * cd /srv/infrastructure/sites/theroach && git fetch -q && [ "$(git rev-parse HEAD)" != "$(git rev-parse @{u})" ] && git pull -q && docker compose up -d --build >> /var/log/theroach-deploy.log 2>&1
+```
+
+A post therefore takes up to ~12 minutes to appear. That is fine for a
+journal; resist the urge to expose a webhook port for instant deploys — this
+box runs mail.
+
+---
+
 ## 4. Rolling back
 
 The image is built from a git commit, so rolling back is rolling git back.
