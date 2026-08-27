@@ -209,6 +209,12 @@ Researched and adversarially verified July 2026. The short version: **the
 defensible queries and the winnable queries are almost the same set.** The
 conflict is narrower than it looks.
 
+> **This section is the strategy — the reasoning behind the choices.**
+> For the do-it-now checklist (Search Console, Google Business Profile
+> copy, NAP block, review request, publishing cadence) see
+> [SEO-TODAY.md](SEO-TODAY.md). Keep the two in step: if the strategy here
+> changes, the checklist is what someone will actually be following.
+
 ### Three tiers. The middle one is the trap.
 
 **✅ TARGET — describes what the entity IS**
