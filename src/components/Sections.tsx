@@ -109,6 +109,11 @@ export const sections: Section[] = [
             and refused to spray it. That refusal became a habit. The habit became a standard. The
             standard became The Roach.
           </Body>
+          <Body delay={0.04}>
+            That was years before the Constitutional Court had anything to say about it, back when
+            growing your own in the Garden Route was something you simply did not discuss. The
+            law caught up eventually. The standard had already been set.
+          </Body>
           <Body delay={0.08}>Don’t panic — it’s organic. It always has been.</Body>
         </div>
       </div>
@@ -171,8 +176,56 @@ export const sections: Section[] = [
             over hype. Craft over volume. Garden Route grown, Western Cape born.
           </Body>
           <Body delay={0.08}>
+            Most people meet good weed by accident — a friend of a friend, something in a bag,
+            no idea where it came from or what went on it. A collective is the opposite of that
+            accident. You know the grower. You know the soil. You can ask what happened to the
+            plant between the seed and your hand, and get a straight answer.
+          </Body>
+          <Body delay={0.16}>
             Membership is by introduction. Nothing is sold here, and nothing ever has a price on
             it. If you know, you know. If you don’t — ask.
+          </Body>
+        </div>
+      </div>
+    ),
+  },
+  {
+    /**
+     * ── THE LOCAL SEO SECTION ────────────────────────────────────────────────
+     *
+     * Added because the audit put the whole property at 386 indexable words —
+     * well under the ~600 floor for ranking anything competitive — and because
+     * the site named its own region only in passing. This is the chapter that
+     * earns "Garden Route", and it earns it honestly: it is genuinely the most
+     * interesting thing about how he grows.
+     *
+     * It also carries the VERNACULAR. "Dagga" and "weed" appeared zero times
+     * across the site, yet they are what South Africans actually type into
+     * Google. Using them in a sentence about culture is commentary, not an
+     * offer — the same line the rest of the copy walks. Keep these nouns.
+     */
+    id: 'place',
+    node: (
+      <div className="text-center">
+        <Kicker>05 · The place</Kicker>
+        <Title>The forest does half the work.</Title>
+        <Rule />
+        <div className="mt-8 space-y-5">
+          <Body>
+            Knysna sits in the middle of the Garden Route, between the Outeniqua mountains and
+            the sea, wrapped in the last great indigenous forest in South Africa. Mist off the
+            lagoon most mornings. Rain that arrives without asking. It is a difficult, humid,
+            wonderful place to grow anything.
+          </Body>
+          <Body delay={0.08}>
+            Coastal damp punishes a careless grower — that is why so much Western Cape dagga is
+            rushed, sprayed and dried in a hurry. We do the opposite. Slow cures in a climate
+            that fights slow cures. Fifteen years of learning what this particular valley does
+            in February, and what it does in July.
+          </Body>
+          <Body delay={0.16}>
+            Garden Route grown, in every sense. You cannot move this operation somewhere easier
+            and get the same thing out of it.
           </Body>
         </div>
       </div>
