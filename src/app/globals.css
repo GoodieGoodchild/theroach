@@ -249,3 +249,64 @@ body {
   background: var(--color-gold);
   color: var(--color-ink);
 }
+
+/* ── Journal prose ───────────────────────────────────────────────────────────
+ *
+ * Markdown from content/blog/*.md lands in .prose-roach. The client writes in
+ * declarations and short bursts — "NEVER GIVE UP." is a heading, not a
+ * sentence — so headings have to carry real weight or his emphasis is lost to
+ * the body text. Everything here is deliberately restrained apart from that:
+ * this page is the plain, readable counterpart to the theatre out front.
+ */
+.prose-roach h2 {
+  font-family: var(--font-display), serif;
+  font-size: 1.75rem;
+  font-weight: 200;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  color: var(--color-gold-lit);
+  margin-top: 2.25rem;
+}
+.prose-roach h3 {
+  font-family: var(--font-display), serif;
+  font-size: 1.25rem;
+  font-weight: 300;
+  color: var(--color-gold);
+  margin-top: 1.75rem;
+}
+.prose-roach strong {
+  font-weight: 400;
+  color: var(--color-bone);
+}
+.prose-roach em {
+  color: color-mix(in srgb, var(--color-bone) 60%, transparent);
+}
+.prose-roach a {
+  color: var(--color-gold-lit);
+  text-underline-offset: 4px;
+}
+.prose-roach a:hover {
+  text-decoration: underline;
+}
+.prose-roach hr {
+  margin: 2.5rem 0;
+  border: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+  opacity: 0.5;
+}
+.prose-roach ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.prose-roach blockquote {
+  border-left: 1px solid color-mix(in srgb, var(--color-gold) 40%, transparent);
+  padding-left: 1.25rem;
+  font-style: italic;
+  color: color-mix(in srgb, var(--color-bone) 70%, transparent);
+}
+/* Images inside post bodies, if the client ever inlines one in the markdown. */
+.prose-roach img {
+  border-radius: 2px;
+  margin: 2rem 0;
+}

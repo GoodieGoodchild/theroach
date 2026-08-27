@@ -73,7 +73,18 @@ for (const f of readdirSync(SRC)) {
     continue;
   }
 
-  const after = statSync(outP).size;
+  // Never ship something BIGGER than what was handed to us. A photo that is
+  // already well compressed and within the size cap comes back heavier after a
+  // re-encode — the client's first cover did, 206KB in and 213KB out. When that
+  // happens the original is simply the better file, so use it.
+  let after = statSync(outP).size;
+  if (after >= before) {
+    copyFileSync(inP, outP);
+    after = before;
+    console.log(`journal media: ${f}  ${(before / 1024).toFixed(0)}KB — already optimal, kept as-is`);
+    continue;
+  }
+
   console.log(
     `journal media: ${f}  ${(before / 1024).toFixed(0)}KB → ${(after / 1024).toFixed(0)}KB`,
   );

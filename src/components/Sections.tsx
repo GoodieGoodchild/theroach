@@ -185,9 +185,12 @@ export const sections: Section[] = [
         <Kicker>The line</Kicker>
         <Title>The circle is one message wide.</Title>
         <Rule />
+        {/* "Three windows" — the writer's booth joined the street. Keep this
+            count honest if a storefront is ever added or removed. */}
         <Body>
-          Two windows on a quiet street: the goods counter, and the growers’ room. No catalogue,
-          no checkout — just a conversation, where it’s always been, person to person.
+          Three windows on a quiet street: the goods counter, the growers’ room, and a booth
+          where somebody writes it all down. No catalogue, no checkout — just a conversation,
+          where it’s always been, person to person.
         </Body>
 
         {/* Goes to /choice, not straight to WhatsApp: the two storefronts are
@@ -212,12 +215,29 @@ export const sections: Section[] = [
           </a>
         </Stagger>
 
-        {/* Internal link to the PotCast. The site had ZERO internal links before
-            this — an orphaned page cannot be crawled or ranked, and the podcast
-            is the property's only real content engine. */}
+        {/* Internal links to the two content engines. The site had ZERO
+            internal links before these — an orphaned page cannot be crawled or
+            ranked, and these are the only parts of the property that grow.
+            The journal was reachable ONLY through the booth on /choice, which
+            is itself noindexed, so it inherited no authority from this page at
+            all. Both links are plain <a> and live in the static HTML, so a
+            crawler finds them whether or not the deck's JS ever runs. */}
         <Stagger delay={0.46}>
           <p className="mt-12 text-base font-light leading-relaxed text-bone/70">
-            We also make a podcast about all of this —{' '}
+            We keep a journal —{' '}
+            <a
+              href="/blog/"
+              className="text-gold-lit underline-offset-4 outline-none hover:underline focus-visible:underline"
+            >
+              The Daily Roach
+            </a>
+            . Notes from the circle: the craft, the culture, the days that don’t go to plan.
+          </p>
+        </Stagger>
+
+        <Stagger delay={0.5}>
+          <p className="mt-5 text-base leading-relaxed font-light text-bone/70">
+            And a podcast about all of it —{' '}
             <a
               href="/potcast/"
               className="text-gold-lit underline-offset-4 outline-none hover:underline focus-visible:underline"
@@ -236,7 +256,7 @@ export const sections: Section[] = [
 
             The disclaimer STAYS. It is the compliance line, and this is the
             indexed page — it has to be readable without following a link. */}
-        <Stagger delay={0.5}>
+        <Stagger delay={0.56}>
           <p className="mx-auto mt-12 max-w-md text-xs leading-relaxed font-light text-bone/65">
             The Roach is a private adult collective. Nothing is offered for sale on this website.
             Strictly {brand.minimumAge}+. Enjoyed in private, as the law intends.

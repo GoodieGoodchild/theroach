@@ -66,6 +66,27 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
       </h1>
       <div className="rule-gold mt-8 w-40" />
 
+      {/* Cover photo. Width/height are declared so the browser reserves the
+          space before the file arrives — without them the text below jumps as
+          it loads. The file is already capped and compressed by
+          scripts/optimise-blog-media.mjs; nothing raw reaches this page. */}
+      {post.image && (
+        <img
+          src={post.image}
+          alt=""
+          width={1600}
+          height={1200}
+          /* Height-capped rather than width-full: the client shoots on a
+             phone, so covers are portrait, and at the full width of this
+             column a 3:4 photo stands 880px tall and swallows the screen
+             before a word is read. Capping the HEIGHT and letting width
+             follow keeps the whole frame visible — never cropped, which
+             would be an editorial decision and not mine to make. */
+          className="mx-auto mt-12 max-h-[60vh] w-auto rounded-sm"
+          style={{ filter: 'drop-shadow(0 24px 50px rgba(0,0,0,.7))' }}
+        />
+      )}
+
       {/* Post body from markdown, converted at build time. The prose comes from
           the collective's own journal — same voice rules as the rest of the
           site: commentary only, no products, no prices. */}

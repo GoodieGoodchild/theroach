@@ -45,6 +45,22 @@ export default function BlogPage() {
       <div className="mt-14 space-y-12">
         {posts.map((post) => (
           <article key={post.slug}>
+            {post.image && (
+              <Link href={`/blog/${post.slug}/`} className="mb-5 block outline-none">
+                <img
+                  src={post.image}
+                  alt=""
+                  width={1600}
+                  height={1200}
+                  loading="lazy"
+                  /* Fixed-height band so a column of posts keeps an even
+                     rhythm whatever shape each photo is. Cropping is fine
+                     HERE — it is a thumbnail, and the full frame is one
+                     click away, uncropped. */
+                  className="h-56 w-full rounded-sm object-cover opacity-90 transition-opacity duration-500 hover:opacity-100"
+                />
+              </Link>
+            )}
             <p className="font-display text-[11px] tracking-[0.3em] text-bone/50 uppercase">
               {new Date(post.date).toLocaleDateString('en-ZA', {
                 day: 'numeric',
