@@ -204,6 +204,68 @@ about 40 bytes, so it will be years before that matters.
 
 ---
 
+## 3a-ii. DevDash analytics
+
+Reported entirely from **Caddy's access log** — no tracking script, no cookie,
+no consent banner. See [ANALYTICS-SPEC.md](ANALYTICS-SPEC.md) for the whole
+contract; this is what applies to this site.
+
+### The one thing that must exist
+
+`/srv/docker/proxy/caddy/Caddyfile`, inside the theroach block:
+
+```
+log {
+	format json
+}
+```
+
+**Without it the site reports zero traffic.** There is no fallback. The block
+is in `docker/Caddyfile.snippet` in this repo — copy it across.
+
+Validate before reloading; a broken Caddyfile takes down **every** site on the
+box, including mail's web UI:
+
+```bash
+docker exec caddy caddy validate --config /etc/caddy/Caddyfile
+```
+
+```bash
+docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+```
+
+Reload, never restart — a restart drops connections and re-runs ACME.
+
+### Audited against the spec 2026-08-28
+
+| Spec item | State |
+|---|---|
+| `log { format json }` | **was missing** — added to the snippet, still to be applied on the server |
+| Real server-side URLs | ✅ static export; every page is a real request |
+| No `#hash` routing | ✅ the deck uses React state, never the URL fragment |
+| Health check internal | ✅ Docker `HEALTHCHECK` hits `127.0.0.1` inside the container, never reaches Caddy |
+| No blanket prefetch | ✅ **measured, not assumed** — loaded the production build, hovered all 7 links, zero RSC/`.txt` prefetch requests. Next does not prefetch in this static export, so `prefetch={false}` would be a no-op |
+| HTML `no-cache`, assets `immutable` | ✅ exactly as the spec requires (`docker/nginx.conf`) |
+| Forms redirect to a success URL | n/a — this site has no forms |
+| `ANALYTICS_EXCLUDE_IPS` | ⬜ add your own IP, see spec §5 |
+
+### Two things to know when reading the numbers
+
+**The story deck is one URL.** Its seven chapters are React state on `/`, so
+DevDash sees a single page view no matter how far someone reads. That is the
+SPA limitation in spec §4, and the spec's own guidance is to accept it rather
+than add client-side view tracking. If the client ever asks "how far do people
+get", say so and we can beacon it the way `/e/whatsapp` already is.
+
+**`/e/whatsapp` will appear in the numbers.** It is the WhatsApp click counter
+(§3a) and it goes through Caddy, so DevDash will log it. That is a *feature*
+under spec §3 — a conversion with its own URL is exactly what it asks for — but
+it has no file extension, so it will likely be counted among page views rather
+than sitting apart as a conversion. Worth knowing before that number is put in
+front of a client.
+
+---
+
 ## 3b. The journal desk — /admin/
 
 The client writes The Daily Roach at `https://www.theroach.co.za/admin/`,

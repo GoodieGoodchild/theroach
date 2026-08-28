@@ -6,6 +6,20 @@
 # first request, provided the DNS points here (see the note at the bottom).
 
 theroach.co.za, www.theroach.co.za {
+	# ── ANALYTICS: NON-NEGOTIABLE ────────────────────────────────────────────
+	#
+	# DevDash reports this site entirely from Caddy's access log. Without this
+	# block the site reports ZERO TRAFFIC — there is no fallback and no tracking
+	# script to make up for it. See ANALYTICS-SPEC.md §1.
+	#
+	# Nothing is installed on the site, no cookie is set and no consent banner is
+	# needed, because this is just the server writing down requests it already
+	# served. That is also why it suits this property: analytics without handing
+	# a visitor list to an ad network.
+	log {
+		format json
+	}
+
 	# The client's journal desk. /admin* is the ONLY dynamic path on this
 	# domain; everything else is the static site. Caddy terminates TLS, which
 	# is what makes the session cookie's Secure flag meaningful.
