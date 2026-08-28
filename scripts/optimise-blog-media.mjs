@@ -47,6 +47,24 @@ for (const f of readdirSync(SRC)) {
 
   const before = statSync(inP).size;
 
+  // A PHOTOGRAPH SAVED AS PNG. PNG is lossless and meant for graphics; a photo
+  // in it runs 5–10× the size of the same image as JPEG (one cover arrived at
+  // 2028KB and became 183KB — 91% smaller). We cannot convert it here, because
+  // the markdown already references this exact filename and changing the
+  // extension would break the image silently. So say so, loudly, with the fix.
+  // Uploads through the CMS are always JPEG; this only catches files dropped in
+  // by hand.
+  if (/\.png$/i.test(f) && before > 600 * 1024) {
+    const meta = await sharp(inP).metadata();
+    if (!meta.hasAlpha) {
+      console.warn(
+        `  ⚠ ${f} is a ${(before / 1024).toFixed(0)}KB PNG with no transparency — almost ` +
+          `certainly a photo. Convert it to .jpg and update the post's "image:" field:\n` +
+          `    npx sharp -i content/blog/uploads/${f} -o content/blog/uploads/${f.replace(/\.png$/i, '.jpg')} -f jpeg -q 84`,
+      );
+    }
+  }
+
   if (IMAGE.test(f)) {
     // GIFs pass through sharp with animation preserved; everything else is
     // recompressed in its own format so the referenced extension stays true.

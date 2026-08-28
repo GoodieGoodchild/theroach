@@ -54,7 +54,17 @@ export function publishedPosts(): Post[] {
       return {
         slug: f.replace(/\.md$/, ''),
         title: String(data.title),
-        date: String(data.date),
+        /**
+         * NORMALISE TO 'YYYY-MM-DD'. YAML parses an unquoted `date: 2026-08-28`
+         * into a Date OBJECT, and String() on that yields
+         * "Fri Aug 28 2026 02:00:00 GMT+0200…". The sort below is lexical, so
+         * posts were ordering by the WEEKDAY NAME — "Fri" before "Wed" put a
+         * two-day-older entry at the top of the journal. Keep this conversion.
+         */
+        date:
+          data.date instanceof Date
+            ? data.date.toISOString().slice(0, 10)
+            : String(data.date).slice(0, 10),
         blurb: String(data.blurb),
         image: data.image ? String(data.image) : undefined,
         html: marked.parse(content, { async: false }),
