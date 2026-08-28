@@ -204,49 +204,81 @@ about 40 bytes, so it will be years before that matters.
 
 ---
 
-## 3b. The journal CMS — /admin/
+## 3b. The journal desk — /admin/
 
-The owner writes The Daily Roach from `https://www.theroach.co.za/admin/` —
-Decap CMS, phone-friendly, hidden by not being linked anywhere and noindexed.
-The real lock is GitHub: the page is useless without a GitHub login that has
-write access to the repo. Every save is a git commit to `main`; the deploy
-watch (below) rebuilds the site.
+The client writes The Daily Roach at `https://www.theroach.co.za/admin/`,
+signing in with **his email address and password** — no GitHub account, no
+third-party service. Phone-friendly; that is what he writes on.
 
-Uploads are committed raw to `content/blog/uploads/` and **shrunk at build**
-into `public/img/blog/` (images capped at 1600px, .mp4 at 1280px H.264;
-anything else fails the build with instructions). The pricing guard scans the
-result, so even a pricelist uploaded by accident stops the deploy.
+Each save writes markdown to `content/blog/`, commits, pushes to GitHub (the
+offsite backup) and touches `.rebuild-requested`. Cron sees the flag and
+rebuilds.
 
-### One-time setup (not done yet)
+**Why a flag file and not a rebuild in-process:** rebuilding needs the Docker
+socket, and mounting that into an internet-facing container is a root
+escalation waiting to happen. The flag is inert; cron does the privileged part.
+Note also that the deploy watch cannot spot these commits by comparing HEAD to
+upstream — the desk commits locally *and* pushes, so the two match instantly.
+The flag is the only signal there is work to do.
 
-1. **GitHub OAuth app** — github.com → Settings → Developer settings → OAuth
-   Apps → New. Homepage `https://www.theroach.co.za`, callback
-   `https://www.theroach.co.za/oauth/callback`. Note the client id + secret.
-2. **`.env` on the server**, next to docker-compose.yml (never in git):
+### Photos
+
+Shrunk twice. Once **in his browser** before upload (canvas, longest side
+1600px) — a phone photo is 8–12MB and that is a slow, expensive, often failed
+upload on SA mobile data. Then again at build by
+`scripts/optimise-blog-media.mjs`, which is the authoritative pass and refuses
+anything that is not an image or .mp4.
+
+Uploads are sniffed by **magic bytes, not file extension**, and filenames are
+whitelisted — a `../../etc/passwd.jpg` upload lands as `..-..-etc-passwd.jpg`
+inside `uploads/` and nowhere else. Both verified.
+
+### One-time setup
+
+1. **`.env`** beside docker-compose.yml on the server — never in git:
    ```
-   DECAP_GITHUB_CLIENT_ID=...
-   DECAP_GITHUB_CLIENT_SECRET=...
+   ADMIN_EMAIL=high@theroach.co.za
+   ADMIN_PASSWORD_HASH=<salt:hash>
+   SESSION_SECRET=<random hex>
+   GIT_TOKEN=<fine-grained PAT>
    ```
-3. **Caddyfile** — add the `/oauth/*` handle from `docker/Caddyfile.snippet`
-   to `/srv/docker/proxy/caddy/Caddyfile`, then `docker exec caddy caddy reload
-   --config /etc/caddy/Caddyfile` (adjust to how caddy is run).
-4. **The owner's GitHub account** — create one for the client if he has none,
-   add it as a collaborator on the repo (Settings → Collaborators). That grant
-   is the access control; removing it revokes the CMS.
-5. `docker compose up -d --build` to start the `decap-oauth` container.
+   Regenerate the hash and secret any time with:
+   ```bash
+   node -e "const{scryptSync,randomBytes}=require('crypto');const s=randomBytes(16).toString('hex');console.log('ADMIN_PASSWORD_HASH='+s+':'+scryptSync(process.argv[1],s,64).toString('hex'));console.log('SESSION_SECRET='+randomBytes(32).toString('hex'))" 'THE-PASSWORD'
+   ```
+2. **GitHub token** — github.com → Settings → Developer settings → Personal
+   access tokens → **Fine-grained**. Repository access: `theroach` **only**.
+   Permission: **Contents → Read and write**. Nothing else. Paste as `GIT_TOKEN`.
+3. **Caddyfile** — add the `/admin*` handle from `docker/Caddyfile.snippet` to
+   `/srv/docker/proxy/caddy/Caddyfile`, then reload Caddy.
+4. `docker compose up -d --build` to start `theroach-admin`.
 
-### Deploy watch — publishes the owner's posts
+### Deploy watch — publishes his posts
 
-CMS commits land on GitHub; nothing rebuilds unless the server notices. Cron,
-every 10 minutes, as the deploy user:
+Every 2 minutes, as the deploy user. Rebuilds when the flag appears OR when
+GitHub is ahead (which covers your own pushes):
 
 ```bash
+*/2 * * * * cd /srv/infrastructure/sites/theroach && { [ -f .rebuild-requested ] && rm -f .rebuild-requested && docker compose up -d --build; } >> /var/log/theroach-deploy.log 2>&1
 */10 * * * * cd /srv/infrastructure/sites/theroach && git fetch -q && [ "$(git rev-parse HEAD)" != "$(git rev-parse @{u})" ] && git pull -q && docker compose up -d --build >> /var/log/theroach-deploy.log 2>&1
 ```
 
-A post therefore takes up to ~12 minutes to appear. That is fine for a
-journal; resist the urge to expose a webhook port for instant deploys — this
-box runs mail.
+A post appears within roughly 2–4 minutes. Resist exposing a webhook port for
+instant deploys — this box runs mail.
+
+### Security posture, and its limits
+
+This is bespoke software with an authenticated write surface on a host that
+also carries mail, so: scrypt hashing with timing-safe compare, signed
+HttpOnly/Secure/SameSite=Strict cookie expiring in 12h, per-IP login backoff
+(five attempts then lockout), whitelisted slugs, size-capped uploads. All
+verified against the running service.
+
+What it is **not**: multi-user, audited, or penetration-tested. One account,
+one purpose. If the client's password leaks, an attacker can publish to the
+blog and commit to the repo — **rotate `ADMIN_PASSWORD_HASH` and revoke the
+GitHub token immediately**. The token is fine-grained to one repo with
+contents-only access precisely to bound that blast radius.
 
 ---
 

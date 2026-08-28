@@ -64,23 +64,35 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # ── Decap CMS OAuth helper ─────────────────────────────────────────────────
-  # The journal desk at /admin/ signs the owner in with GitHub; this tiny
-  # container (docker/oauth/ — one dependency-free file) does the token
-  # exchange. Caddy routes /oauth/* to it. Secrets come from .env on the
-  # server, which is NOT in git:
-  #   DECAP_GITHUB_CLIENT_ID=...
-  #   DECAP_GITHUB_CLIENT_SECRET=...
-  decap-oauth:
-    build: ./docker/oauth
-    container_name: decap-oauth
+  # ── Journal desk (the client's CMS) ────────────────────────────────────────
+  # Email + password, no GitHub account needed. Writes markdown and photos into
+  # the site repo, commits, pushes, and touches .rebuild-requested so the host's
+  # cron rebuilds. See docker/admin/server.js and RUNBOOK 3b.
+  #
+  # Secrets live in .env on the server, never in git:
+  #   ADMIN_EMAIL=high@theroach.co.za
+  #   ADMIN_PASSWORD_HASH=<salt:hash>
+  #   SESSION_SECRET=<random>
+  #   GIT_TOKEN=<fine-grained PAT, contents:write on this repo only>
+  admin:
+    build: ./docker/admin
+    container_name: theroach-admin
     restart: unless-stopped
     networks:
       - web
     environment:
-      OAUTH_CLIENT_ID: ${DECAP_GITHUB_CLIENT_ID}
-      OAUTH_CLIENT_SECRET: ${DECAP_GITHUB_CLIENT_SECRET}
-    read_only: true
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH}
+      SESSION_SECRET: ${SESSION_SECRET}
+      GIT_TOKEN: ${GIT_TOKEN}
+      GIT_REMOTE: github.com/GoodieGoodchild/theroach.git
+
+    # The repo itself, writable — this is the one container that needs it, and
+    # it is why everything else about this service is locked down. Mount the
+    # compose directory, which IS the git working copy.
+    volumes:
+      - .:/repo
+
     security_opt:
       - no-new-privileges:true
     logging:

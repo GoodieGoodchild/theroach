@@ -44,3 +44,6 @@ public/img/blog/
 
 # Server secrets (Decap OAuth app credentials live in .env on the box)
 .env
+
+# CMS rebuild signal, written by the journal desk container
+.rebuild-requested

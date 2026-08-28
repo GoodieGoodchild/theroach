@@ -1,7 +1,0 @@
-# Decap OAuth helper — one file, no npm install, nothing to supply-chain.
-FROM node:22-alpine
-WORKDIR /app
-COPY server.js .
-USER node
-EXPOSE 3000
-CMD ["node", "server.js"]
