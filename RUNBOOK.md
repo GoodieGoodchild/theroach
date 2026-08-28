@@ -253,6 +253,21 @@ inside `uploads/` and nowhere else. Both verified.
    `/srv/docker/proxy/caddy/Caddyfile`, then reload Caddy.
 4. `docker compose up -d --build` to start `theroach-admin`.
 
+### If saving fails with a permissions error on first run
+
+The container runs as `node` (uid 1000) and writes into the repo, which on the
+host is owned by `jonathan`. On Ubuntu the first user is usually uid 1000 too,
+so this normally just works — but check rather than assume:
+
+```bash
+id -u jonathan
+```
+
+If it is not 1000, either add `user: "$(id -u jonathan):$(id -g jonathan)"` to
+the `admin` service in docker-compose.yml, or `chgrp -R` the repo to a group
+the container shares. Symptom is a save returning "That didn't save" with a
+permission-denied line in `docker logs theroach-admin`.
+
 ### Deploy watch — publishes his posts
 
 Every 2 minutes, as the deploy user. Rebuilds when the flag appears OR when

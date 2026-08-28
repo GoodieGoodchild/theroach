@@ -42,7 +42,7 @@ logoassets/roachjoint.mp4
 # Generated from content/blog/uploads by scripts/optimise-blog-media.mjs
 public/img/blog/
 
-# Server secrets (Decap OAuth app credentials live in .env on the box)
+# Server secrets (journal desk credentials + GitHub token live in .env on the box)
 .env
 
 # CMS rebuild signal, written by the journal desk container
