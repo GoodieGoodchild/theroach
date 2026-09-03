@@ -299,15 +299,28 @@ inside `uploads/` and nowhere else. Both verified.
 
 1. **`.env`** beside docker-compose.yml on the server — never in git:
    ```
-   ADMIN_EMAIL=high@theroach.co.za
-   ADMIN_PASSWORD_HASH=<salt:hash>
+   ADMIN_USERS=email=salt:hash,email2=salt2:hash2
    SESSION_SECRET=<random hex>
    GIT_TOKEN=<fine-grained PAT>
    ```
-   Regenerate the hash and secret any time with:
+   `ADMIN_USERS` is comma-separated `email=salt:hash`. Safe separators: an
+   email contains neither `=` nor `,`, and the credential is hex. Adding or
+   removing a person is one edit plus `docker compose up -d`; **removing
+   someone kills their live session immediately**, not just future logins.
+
+   Generate a user's entry:
    ```bash
-   node -e "const{scryptSync,randomBytes}=require('crypto');const s=randomBytes(16).toString('hex');console.log('ADMIN_PASSWORD_HASH='+s+':'+scryptSync(process.argv[1],s,64).toString('hex'));console.log('SESSION_SECRET='+randomBytes(32).toString('hex'))" 'THE-PASSWORD'
+   node -e "const{scryptSync,randomBytes}=require('crypto');const s=randomBytes(16).toString('hex');console.log(process.argv[1]+'='+s+':'+scryptSync(process.argv[2],s,64).toString('hex'))" 'someone@example.com' 'THE-PASSWORD'
    ```
+   And a session secret (once, ever — changing it signs everyone out):
+   ```bash
+   node -e "console.log('SESSION_SECRET='+require('crypto').randomBytes(32).toString('hex'))"
+   ```
+   The single-account `ADMIN_EMAIL`/`ADMIN_PASSWORD_HASH` pair still works and
+   is merged in, so an older `.env` keeps running.
+
+   Posts are committed under the address of whoever saved them, so `git log`
+   shows who wrote what.
 2. **GitHub token** — github.com → Settings → Developer settings → Personal
    access tokens → **Fine-grained**. Repository access: `theroach` **only**.
    Permission: **Contents → Read and write**. Nothing else. Paste as `GIT_TOKEN`.

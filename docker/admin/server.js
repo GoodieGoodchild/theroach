@@ -40,22 +40,42 @@ import { join } from 'node:path';
 const REPO = '/repo';
 const POSTS = join(REPO, 'content', 'blog');
 const UPLOADS = join(POSTS, 'uploads');
-const EMAIL = (process.env.ADMIN_EMAIL || '').toLowerCase();
-const PW_HASH = process.env.ADMIN_PASSWORD_HASH || '';
+/**
+ * USERS. `ADMIN_USERS` is a comma-separated list of `email=salt:hash` — the
+ * separators are safe because an email address contains neither `=` nor `,`,
+ * and the salt/hash are hex.
+ *
+ *   ADMIN_USERS=high@theroach.co.za=abc123:def456,jon@example.com=aaa:bbb
+ *
+ * The older single-account ADMIN_EMAIL/ADMIN_PASSWORD_HASH pair still works and
+ * is merged in, so an existing .env keeps running untouched.
+ */
+const USERS = new Map();
+for (const entry of (process.env.ADMIN_USERS || '').split(',')) {
+  const at = entry.indexOf('=');
+  if (at < 1) continue;
+  const email = entry.slice(0, at).trim().toLowerCase();
+  const cred = entry.slice(at + 1).trim();
+  if (email && cred.includes(':')) USERS.set(email, cred);
+}
+if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD_HASH) {
+  USERS.set(process.env.ADMIN_EMAIL.toLowerCase(), process.env.ADMIN_PASSWORD_HASH);
+}
 const SECRET = process.env.SESSION_SECRET || '';
 const GIT_TOKEN = process.env.GIT_TOKEN || '';
 const GIT_REMOTE = process.env.GIT_REMOTE || 'github.com/GoodieGoodchild/theroach.git';
 const MAX_UPLOAD = 12 * 1024 * 1024; // a phone photo, before browser-side shrink
 
-if (!EMAIL || !PW_HASH || !SECRET) {
-  console.error('ADMIN_EMAIL / ADMIN_PASSWORD_HASH / SESSION_SECRET missing — refusing to start.');
+if (!USERS.size || !SECRET) {
+  console.error('No users configured (ADMIN_USERS) or SESSION_SECRET missing — refusing to start.');
   process.exit(1);
 }
+console.log(`journal desk: ${USERS.size} account(s) configured`);
 
 /* ── auth ─────────────────────────────────────────────────────────────────── */
 
-const checkPassword = (given) => {
-  const [salt, want] = PW_HASH.split(':');
+const checkPassword = (email, given) => {
+  const [salt, want] = (USERS.get(email) || '').split(':');
   if (!salt || !want) return false;
   const got = scryptSync(given, salt, 64).toString('hex');
   // Both are hex of identical length, so timingSafeEqual is safe to call.
@@ -64,18 +84,27 @@ const checkPassword = (given) => {
 };
 
 const sign = (v) => createHmac('sha256', SECRET).update(v).digest('base64url');
-const mintSession = () => {
-  const body = `${Date.now() + 12 * 3600e3}`;
+
+/** Session carries WHO, so a post can be committed under the person who wrote it. */
+const mintSession = (email) => {
+  const body = `${Date.now() + 12 * 3600e3}.${Buffer.from(email).toString('base64url')}`;
   return `${body}.${sign(body)}`;
 };
-const validSession = (c) => {
-  if (!c) return false;
-  const [body, mac] = c.split('.');
-  if (!body || !mac) return false;
+/** Returns the signed-in email, or null. */
+const sessionUser = (c) => {
+  if (!c) return null;
+  const i = c.lastIndexOf('.');
+  if (i < 1) return null;
+  const body = c.slice(0, i);
+  const mac = c.slice(i + 1);
   const expect = sign(body);
-  if (mac.length !== expect.length) return false;
-  if (!timingSafeEqual(Buffer.from(mac), Buffer.from(expect))) return false;
-  return Number(body) > Date.now();
+  if (mac.length !== expect.length) return null;
+  if (!timingSafeEqual(Buffer.from(mac), Buffer.from(expect))) return null;
+  const [exp, who] = body.split('.');
+  if (Number(exp) <= Date.now()) return null;
+  const email = Buffer.from(who || '', 'base64url').toString();
+  // A user removed from .env loses access immediately, session or not.
+  return USERS.has(email) ? email : null;
 };
 
 // Per-IP backoff. In memory on purpose: a restart clearing it is fine, and it
@@ -154,10 +183,12 @@ const writePost = (p) => {
 const git = (...args) =>
   execFileSync('git', args, { cwd: REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
 
-const publish = (message) => {
+const publish = (message, author) => {
   try {
     git('add', '-A', 'content/blog');
-    git('-c', 'user.email=high@theroach.co.za', '-c', 'user.name=The Roach',
+    // Attributed to whoever is signed in, so `git log` shows who posted what
+    // once more than one person has a login.
+    git('-c', `user.email=${author}`, '-c', 'user.name=The Roach Journal',
       'commit', '-m', message);
   } catch (e) {
     // Nothing staged is not a failure — he may have saved without changing anything.
@@ -216,7 +247,7 @@ ${msg ? `<div class="err">${esc(msg)}</div>` : ''}
   <button type="submit">Sign in</button>
 </form>`);
 
-const listPage = (posts, note) => shell('Journal', `
+const listPage = (posts, note, who) => shell('Journal', `
 <div class="row" style="justify-content:space-between">
   <h1>The Daily Roach</h1>
   <a class="btn" href="/admin/new">New post</a>
@@ -226,7 +257,9 @@ ${posts.map((p) => `<div class="post">
   <div><a href="/admin/edit/${esc(p.slug)}" style="color:var(--bone)">${esc(p.title || p.slug)}</a>
   <div class="muted">${esc(p.date)}${p.published ? '' : ' · draft'}</div></div>
 </div>`).join('') || '<p class="muted">No posts yet.</p>'}
-<form method="post" action="/admin/logout"><button>Sign out</button></form>`);
+<form method="post" action="/admin/logout">
+  <button>Sign out</button> <span class="muted">signed in as ${esc(who)}</span>
+</form>`);
 
 const editPage = (p) => shell(p.slug ? 'Edit' : 'New', `
 <h1>${p.slug ? 'Edit post' : 'New post'}</h1>
@@ -304,25 +337,28 @@ createServer(async (req, res) => {
   const path = url.pathname.replace(/\/+$/, '') || '/admin';
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'local';
   const cookie = /(?:^|;\s*)rd=([^;]+)/.exec(req.headers.cookie || '')?.[1];
-  const authed = validSession(cookie);
+  const user = sessionUser(cookie);
 
   try {
     if (path === '/admin/login' && req.method === 'POST') {
       if (blocked(ip)) return send(res, 429, loginPage('Too many attempts. Wait a few minutes.'));
       const form = new URLSearchParams((await body(req, 4096)).toString());
-      const ok = form.get('email')?.toLowerCase() === EMAIL && checkPassword(form.get('password') || '');
-      if (!ok) { noteFail(ip); return send(res, 401, loginPage('Wrong email or password.')); }
+      const email = (form.get('email') || '').trim().toLowerCase();
+      if (!checkPassword(email, form.get('password') || '')) {
+        noteFail(ip);
+        return send(res, 401, loginPage('Wrong email or password.'));
+      }
       attempts.delete(ip);
-      return send(res, 302, '', { Location: '/admin/', 'Set-Cookie': COOKIE(mintSession(), 43200) });
+      return send(res, 302, '', { Location: '/admin/', 'Set-Cookie': COOKIE(mintSession(email), 43200) });
     }
 
     if (path === '/admin/logout') {
       return send(res, 302, '', { Location: '/admin/', 'Set-Cookie': COOKIE('', 0) });
     }
 
-    if (!authed) return send(res, 200, loginPage(''));
+    if (!user) return send(res, 200, loginPage(''));
 
-    if (path === '/admin') return send(res, 200, listPage(listPosts(), url.searchParams.get('saved') ? 'Saved. The site rebuilds within a few minutes.' : ''));
+    if (path === '/admin') return send(res, 200, listPage(listPosts(), url.searchParams.get('saved') ? 'Saved. The site rebuilds within a few minutes.' : '', user));
 
     if (path === '/admin/new') {
       return send(res, 200, editPage({
@@ -369,7 +405,7 @@ createServer(async (req, res) => {
         published: f.get('published') === 'on',
         body: f.get('body') || '',
       });
-      publish(`journal: ${slug}`);
+      publish(`journal: ${slug}`, user);
       return send(res, 302, '', { Location: '/admin/?saved=1' });
     }
 
