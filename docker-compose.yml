@@ -81,10 +81,16 @@ services:
     networks:
       - web
     environment:
-      ADMIN_EMAIL: ${ADMIN_EMAIL}
-      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH}
+      # ADMIN_USERS is the current form: comma-separated `email=salt:hash`.
+      # The ADMIN_EMAIL/ADMIN_PASSWORD_HASH pair below is the older single
+      # account, kept so an existing .env keeps working; server.js merges both.
+      # Leaving them out entirely is what broke the container on first run —
+      # server.js read ADMIN_USERS while compose passed only the old names.
+      ADMIN_USERS: ${ADMIN_USERS:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:-}
       SESSION_SECRET: ${SESSION_SECRET}
-      GIT_TOKEN: ${GIT_TOKEN}
+      GIT_TOKEN: ${GIT_TOKEN:-}
       GIT_REMOTE: github.com/GoodieGoodchild/theroach.git
 
     # The repo itself, writable — this is the one container that needs it, and
