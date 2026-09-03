@@ -40,5 +40,5 @@ That knowledge does not transfer. Move this operation somewhere easier and you w
 
 Garden Route grown, in every sense that matters.
 
-🪳 **The Roach**\
+🪳 **The Roach**
 *Notes from the Circle.*

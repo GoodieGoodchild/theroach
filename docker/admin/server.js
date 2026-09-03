@@ -36,6 +36,14 @@ import {
   readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, unlinkSync,
 } from 'node:fs';
 import { join } from 'node:path';
+import { marked } from 'marked';
+
+/**
+ * SAME parser, SAME options as src/lib/blog.ts. `breaks: true` is the important
+ * one: the client writes on his phone and pastes from WhatsApp, where a new
+ * line means a new line. If these two ever drift, the preview starts lying.
+ */
+const renderBody = (md) => marked.parse(md || '', { async: false, breaks: true, gfm: true });
 
 const REPO = '/repo';
 const POSTS = join(REPO, 'content', 'blog');
@@ -236,6 +244,15 @@ button:hover,.btn:hover{background:rgba(201,162,39,.12)}
 .err{background:#2a1414;border:1px solid #5a2424;padding:12px;border-radius:4px;margin:16px 0}
 .ok{background:#14241a;border:1px solid #245a34;padding:12px;border-radius:4px;margin:16px 0}
 img.prev{max-width:100%;border-radius:4px;margin-top:12px}
+.preview{background:#0f0f0f;border:1px solid #2a2a2a;border-radius:4px;padding:16px 18px;
+ min-height:120px;line-height:1.7;color:#d8d2c6}
+.preview h2{font-size:1.5rem;font-weight:200;color:var(--goldlit);margin:1.4rem 0 .6rem}
+.preview h3{font-size:1.15rem;font-weight:300;color:var(--gold)}
+.preview strong{font-weight:600;color:#fff}
+.preview em{color:#a09880}
+.preview hr{border:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:1.6rem 0}
+.preview p{margin:0 0 1rem}
+code{background:#1c1c1c;padding:1px 5px;border-radius:3px;font-size:.9em}
 </style></head><body><div class="wrap">${body}</div></body></html>`;
 
 const loginPage = (msg) => shell('Sign in', `
@@ -276,8 +293,16 @@ const editPage = (p) => shell(p.slug ? 'Edit' : 'New', `
   <input type="hidden" name="image" id="image" value="${esc(p.image)}">
   ${p.image ? `<img class="prev" id="prev" src="${esc(p.image)}">` : '<img class="prev" id="prev" style="display:none">'}
 
-  <label>Body — markdown. Blank line between paragraphs; end a line with \\ to break it.</label>
-  <textarea name="body" required>${esc(p.body)}</textarea>
+  <label>Your post</label>
+  <div class="muted" style="margin-bottom:8px">
+    Type it, or paste it straight from WhatsApp or your notes. Line breaks and
+    emoji are kept exactly as you write them. Leave a blank line between
+    paragraphs. For a heading, start the line with <code>##</code>.
+  </div>
+  <textarea name="body" id="body" required>${esc(p.body)}</textarea>
+
+  <label>How it will look</label>
+  <div id="preview" class="preview">Start typing…</div>
 
   <label class="row" style="margin-top:20px">
     <input type="checkbox" name="published" style="width:auto" ${p.published ? 'checked' : ''}>
@@ -291,6 +316,18 @@ const editPage = (p) => shell(p.slug ? 'Edit' : 'New', `
 // Shrink on the DEVICE before upload. A modern phone photo is 8-12MB; over a
 // South African mobile connection that is a slow, expensive upload and often a
 // failed one. Longest side 1600px matches what the build would produce anyway.
+// Live preview, rendered by the SERVER with the same parser the site uses, so
+// it cannot drift from the published page.
+const bodyEl = document.getElementById('body');
+const prevEl = document.getElementById('preview');
+let t;
+const render = async () => {
+  const r = await fetch('/admin/preview', { method: 'POST', body: bodyEl.value });
+  prevEl.innerHTML = await r.text();
+};
+bodyEl.addEventListener('input', () => { clearTimeout(t); t = setTimeout(render, 350); });
+if (bodyEl.value.trim()) render();
+
 document.getElementById('file').addEventListener('change', async (e) => {
   const file = e.target.files[0]; if (!file) return;
   const bmp = await createImageBitmap(file);
@@ -371,6 +408,12 @@ createServer(async (req, res) => {
       const p = readPost(path.slice('/admin/edit/'.length));
       if (!p) return send(res, 404, shell('Not found', '<h1>No such post</h1><a class="btn" href="/admin/">Back</a>'));
       return send(res, 200, editPage(p));
+    }
+
+    if (path === '/admin/preview' && req.method === 'POST') {
+      const md = (await body(req, 512 * 1024)).toString();
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end(renderBody(md));
     }
 
     if (path === '/admin/upload' && req.method === 'POST') {

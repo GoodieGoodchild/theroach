@@ -15,17 +15,17 @@ This is the first page of The Roach Daily Journal, coming straight from Knysna i
 
 Life has a funny way of testing you when you think you've already been tested enough.
 
-Setbacks. 💥\
-Disappointment. 💔\
-People changing. 🥀\
-Plans falling apart. 🧩\
+Setbacks. 💥
+Disappointment. 💔
+People changing. 🥀
+Plans falling apart. 🧩
 Starting over. 🔄
 
 But I'm still here. 👊
 
-Still standing.\
-Still building. 🧱\
-Still dreaming. 🌱\
+Still standing.
+Still building. 🧱
+Still dreaming. 🌱
 Still moving forward. 🚶‍♂️🔥
 
 Living in Knysna, South Africa, surrounded by the forests, mountains, lagoon and ocean, is a daily reminder that everything changes.
@@ -38,9 +38,9 @@ So do we.
 
 This journal is about the real side of life in the Garden Route — the good days, the difficult days, the lessons, the failures and the decision to keep going.
 
-You can fall.\
-You can lose.\
-You can get tired.\
+You can fall.
+You can lose.
+You can get tired.
 You can start again.
 
 **But NEVER GIVE UP ON YOURSELF.** 🖤👊

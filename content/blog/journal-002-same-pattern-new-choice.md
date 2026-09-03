@@ -5,7 +5,7 @@ blurb: "You don't always realise you're living the same chapter again until you 
 image: /img/blog/roachblog2.jpg
 ---
 
-🪳 **SAME PATTERN. NEW CHOICE.**\
+🪳 **SAME PATTERN. NEW CHOICE.**
 🪳 *THE ROACH DAILY JOURNAL 002*
 
 ## 🔁 OVER & OVER
@@ -14,8 +14,8 @@ Funny thing about life…
 
 Sometimes you don't realise you're living the same chapter again until you recognise the ending. 📖
 
-Different faces.\
-Different places.\
+Different faces.
+Different places.
 Different circumstances.
 
 But somehow… the feeling is familiar. 👀
@@ -30,12 +30,12 @@ I've spent enough time repeating chapters that taught me nothing new.
 
 These days, I'm interested in what happens when you finally make a different choice. 🧠⚡
 
-Not for applause. 👏\
-Not to prove a point.\
+Not for applause. 👏
+Not to prove a point.
 Just because you've outgrown the old version of the story. 🌱
 
-Same life.\
-Different decisions.\
+Same life.
+Different decisions.
 Different outcome.
 
 **That's the experiment.** 🎯

@@ -67,7 +67,17 @@ export function publishedPosts(): Post[] {
             : String(data.date).slice(0, 10),
         blurb: String(data.blurb),
         image: data.image ? String(data.image) : undefined,
-        html: marked.parse(content, { async: false }),
+        /**
+         * `breaks: true` IS THE WHOLE POINT. The client writes on his phone and
+         * pastes from WhatsApp/notes, where a new line means a new line. Plain
+         * markdown collapses single newlines into one running paragraph, so
+         * without this his staccato style — "Still standing. / Still building."
+         * — arrives as a wall of text, and the only fix would be teaching him to
+         * end lines with a backslash. He is not going to do that, and shouldn't
+         * have to. Verified backwards-compatible with the posts that DO use
+         * trailing backslashes: they still render, with no stray slashes.
+         */
+        html: marked.parse(content, { async: false, breaks: true, gfm: true }),
         published: data.published !== false,
       };
     })
