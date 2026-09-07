@@ -1,5 +1,5 @@
 ---
-title: "Peace..."
+title: "🪳 THE ROACH DAILY JOURNAL — Peace, That's It 003"
 date: 2026-09-07
 blurb: "Peace isn't always something you find. Sometimes it's simply the moment when nothing needs fixing. A late-night reflection from Knysna. 🌙"
 image: /img/blog/file_00000000048c820e88ad01f56f45116e.jpg
