@@ -13,6 +13,8 @@
     "images": "node scripts/optimise-images.mjs",
     "guard": "node scripts/guard-pricing.mjs",
     "video": "node scripts/prepare-video.mjs",
+    "satellite": "node scripts/route-satellite.mjs",
+    "guide-photos": "node scripts/guide-photos.mjs",
     "seo": "node scripts/seo-audit.mjs"
   },
   "dependencies": {

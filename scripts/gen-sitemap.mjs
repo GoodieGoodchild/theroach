@@ -35,7 +35,8 @@ try {
 }
 
 const pages = [
-  { loc: '/', changefreq: 'monthly', priority: '1.0' },
+  { loc: '/', changefreq: 'weekly', priority: '1.0' },
+  { loc: '/story/', changefreq: 'monthly', priority: '0.6' },
   { loc: '/potcast/', changefreq: 'weekly', priority: '0.9' },
   ...slugs.map((s) => ({ loc: `/potcast/${s}/`, changefreq: 'monthly', priority: '0.7' })),
   { loc: '/blog/', changefreq: 'weekly', priority: '0.9' },

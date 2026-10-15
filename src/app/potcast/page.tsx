@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import SiteHeader from '@/components/site/SiteHeader';
+import SiteFooter from '@/components/site/SiteFooter';
 import { brand } from '@/lib/config';
 import { show, publishedEpisodes } from '@/lib/potcast';
 
@@ -52,102 +54,106 @@ export default function PotcastPage() {
   const episodes = publishedEpisodes();
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-24 sm:py-32">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(seriesLd) }} />
+    <>
+      <SiteHeader />
+      <main className="mx-auto max-w-3xl px-6 py-16 sm:py-24">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(seriesLd) }} />
 
-      <p className="font-display text-[11px] font-light tracking-[0.5em] text-gold uppercase">
-        {brand.town} · Garden Route · South Africa
-      </p>
-
-      <h1 className="foil mt-6 font-display text-4xl font-extralight tracking-wide sm:text-6xl">
-        PotCast — Bra met ’n Bek
-      </h1>
-
-      <div className="rule-gold mt-8 w-40" />
-
-      <p className="mt-8 text-lg font-light leading-relaxed text-bone/75">{show.strap}</p>
-
-      <div className="mt-6 space-y-5 text-base font-light leading-relaxed text-bone/70">
-        <p>
-          A podcast about cannabis in South Africa — the culture, the law, the craft, and the
-          conversations that only really start after dark. Recorded in Knysna, on the Garden
-          Route, by people who have had their hands in the soil for fifteen years.
+        <p className="font-display text-[11px] font-light tracking-[0.5em] text-gold uppercase">
+          {brand.town} · Garden Route · South Africa
         </p>
-        <p>
-          Not a sales channel. Nothing is offered for sale here, on the podcast or anywhere on
-          this site. It is a conversation about a plant, a place, and a law that is still being
-          written.
-        </p>
-      </div>
 
-      {(show.spotify || show.apple || show.youtube) && (
-        <div className="mt-10 flex flex-wrap gap-3">
-          {show.spotify && <Listen href={show.spotify} label="Spotify" />}
-          {show.apple && <Listen href={show.apple} label="Apple Podcasts" />}
-          {show.youtube && <Listen href={show.youtube} label="YouTube" />}
-        </div>
-      )}
+        <h1 className="foil mt-6 font-display text-4xl font-extralight tracking-wide sm:text-6xl">
+          PotCast — Bra met ’n Bek
+        </h1>
 
-      <section className="mt-20">
-        <h2 className="font-display text-2xl font-light tracking-[0.12em] text-bone uppercase">
-          Episodes
-        </h2>
-        <div className="rule-gold mt-6 w-24" />
+        <div className="rule-gold mt-8 w-40" />
 
-        {episodes.length === 0 ? (
-          <p className="mt-8 text-base font-light leading-relaxed text-bone/60">
-            The first episodes are being recorded now. New episodes weekly — check back, or
-            follow along on{' '}
-            <a href={brand.instagram} className="text-gold underline-offset-4 hover:underline">
-              Instagram
-            </a>
-            .
+        <p className="mt-8 text-lg font-light leading-relaxed text-bone/75">{show.strap}</p>
+
+        <div className="mt-6 space-y-5 text-base font-light leading-relaxed text-bone/70">
+          <p>
+            A podcast about cannabis in South Africa — the culture, the law, the craft, and the
+            conversations that only really start after dark. Recorded in Knysna, on the Garden
+            Route, by people who have had their hands in the soil for fifteen years.
           </p>
-        ) : (
-          <ol className="mt-10 space-y-10">
-            {episodes.map((ep) => (
-              <li key={ep.slug}>
-                <article>
-                  <p className="font-display text-[11px] tracking-[0.35em] text-gold/70 uppercase">
-                    Episode {ep.number} ·{' '}
-                    <time dateTime={ep.published}>
-                      {new Date(ep.published + 'T00:00:00Z').toLocaleDateString('en-ZA', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                        timeZone: 'UTC',
-                      })}
-                    </time>
-                    {ep.minutes ? ` · ${ep.minutes} min` : ''}
-                  </p>
-                  <h3 className="mt-3 font-display text-2xl font-light tracking-wide text-bone">
-                    <Link href={`/potcast/${ep.slug}/`} className="hover:text-gold-lit">
-                      {ep.title}
-                    </Link>
-                  </h3>
-                  <p className="mt-3 text-base font-light leading-relaxed text-bone/65">{ep.blurb}</p>
-                  <Link
-                    href={`/potcast/${ep.slug}/`}
-                    className="mt-4 inline-block font-display text-[11px] tracking-[0.3em] text-gold uppercase underline-offset-4 hover:underline"
-                  >
-                    Episode notes &amp; transcript →
-                  </Link>
-                </article>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+          <p>
+            Not a sales channel. Nothing is offered for sale here, on the podcast or anywhere on
+            this site. It is a conversation about a plant, a place, and a law that is still being
+            written.
+          </p>
+        </div>
 
-      <nav className="mt-24 border-t hairline pt-8">
-        <Link
-          href="/"
-          className="font-display text-[11px] tracking-[0.3em] text-bone/60 uppercase hover:text-gold"
-        >
-          ← The Roach — private cannabis collective, Knysna
-        </Link>
-      </nav>
-    </main>
+        {(show.spotify || show.apple || show.youtube) && (
+          <div className="mt-10 flex flex-wrap gap-3">
+            {show.spotify && <Listen href={show.spotify} label="Spotify" />}
+            {show.apple && <Listen href={show.apple} label="Apple Podcasts" />}
+            {show.youtube && <Listen href={show.youtube} label="YouTube" />}
+          </div>
+        )}
+
+        <section className="mt-20">
+          <h2 className="font-display text-2xl font-light tracking-[0.12em] text-bone uppercase">
+            Episodes
+          </h2>
+          <div className="rule-gold mt-6 w-24" />
+
+          {episodes.length === 0 ? (
+            <p className="mt-8 text-base font-light leading-relaxed text-bone/60">
+              The first episodes are being recorded now. New episodes weekly — check back, or
+              follow along on{' '}
+              <a href={brand.instagram} className="text-gold underline-offset-4 hover:underline">
+                Instagram
+              </a>
+              .
+            </p>
+          ) : (
+            <ol className="mt-10 space-y-10">
+              {episodes.map((ep) => (
+                <li key={ep.slug}>
+                  <article>
+                    <p className="font-display text-[11px] tracking-[0.35em] text-gold/70 uppercase">
+                      Episode {ep.number} ·{' '}
+                      <time dateTime={ep.published}>
+                        {new Date(ep.published + 'T00:00:00Z').toLocaleDateString('en-ZA', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                          timeZone: 'UTC',
+                        })}
+                      </time>
+                      {ep.minutes ? ` · ${ep.minutes} min` : ''}
+                    </p>
+                    <h3 className="mt-3 font-display text-2xl font-light tracking-wide text-bone">
+                      <Link href={`/potcast/${ep.slug}/`} className="hover:text-gold-lit">
+                        {ep.title}
+                      </Link>
+                    </h3>
+                    <p className="mt-3 text-base font-light leading-relaxed text-bone/65">{ep.blurb}</p>
+                    <Link
+                      href={`/potcast/${ep.slug}/`}
+                      className="mt-4 inline-block font-display text-[11px] tracking-[0.3em] text-gold uppercase underline-offset-4 hover:underline"
+                    >
+                      Episode notes &amp; transcript →
+                    </Link>
+                  </article>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+
+        <nav className="mt-24 border-t hairline pt-8">
+          <Link
+            href="/"
+            className="font-display text-[11px] tracking-[0.3em] text-bone/60 uppercase hover:text-gold"
+          >
+            ← The Roach — private cannabis collective, Knysna
+          </Link>
+        </nav>
+      </main>
+      <SiteFooter />
+    </>
   );
 }
 

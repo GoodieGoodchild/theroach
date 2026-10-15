@@ -1,9 +1,44 @@
 # The Roach — theroach.co.za
 
-Single-page brand site. Next.js 16 static export · Tailwind 4 · Motion.
-**The site is a story with one door: WhatsApp. Nothing is sold on it, by design.**
+Brand site and Garden Route guide. Next.js 16 static export · Tailwind 4 · Motion.
+**One door: WhatsApp. Nothing is sold on the site, by design.**
 
-## The interaction
+## The home page — the guide
+
+The home page used to be the film and the deck described below. The client's
+verdict was **"too mysterious"**: someone arriving cold could not tell what The
+Roach was or what there was to do. So `/` is now a plain, scrolling page that
+says what it is in its first sentence and then gives people things to do:
+
+- **Things to do** — `src/lib/guide.ts`, filterable by town and by mood
+  (`ThingsToDo.tsx`). Every card is always in the DOM; filters only set `hidden`.
+- **420 culture** — the law in plain words, how a circle behaves, the vocabulary.
+- The journal, the podcast, and how the club works.
+
+**Imagery — every picture is credited where it appears, because the licences
+require it:**
+- The route map is a real Sentinel-2 satellite pass (3 May 2026), built by
+  `npm run satellite`. Copernicus data is free for commercial use on condition
+  of the line "Contains modified Copernicus Sentinel data 2026". Not EOX
+  "cloudless" — that needs a paid commercial licence.
+- Card photos are Wikimedia Commons, PD/CC0/CC BY/CC BY-SA only, fetched by
+  `npm run guide-photos`, which reads author and licence live from the Commons
+  API and fails on anything else. Each card prints author, licence and
+  "cropped". Six places with no usable photo show their spot from the same
+  satellite pass instead. The client's own photos would beat all of them.
+
+A shared header (`components/site/SiteHeader.tsx`) is on every content page: a
+sticky bar on desktop, a tab bar under the thumb on a phone.
+
+**The film and the deck moved to `/story/`, unchanged.** Everything below about
+them still holds — read "the landing" as "/story/".
+
+Still draft, all needing the client: the guide's picks and wording (he lives
+there; his list will be better), and the law summary, which is **not
+attorney-reviewed**. The copy rules below apply to the guide too, including the
+innocent senses a travel guide reaches for ("order", "menu", "shop").
+
+## The interaction (`/story/`)
 
 The landing is the client's **burning-joint film** (`logoassets/theroach.mp4`),
 with the wordmark composited beneath it so the two together read as the full
