@@ -41,7 +41,7 @@ export default function NotFound() {
           href="/"
           className="font-display text-[11px] tracking-[0.3em] text-gold-lit uppercase outline-none hover:underline focus-visible:underline"
         >
-          The story
+          Home
         </Link>
         <Link
           href="/blog/"

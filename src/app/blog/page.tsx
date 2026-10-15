@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import SiteHeader from '@/components/site/SiteHeader';
+import SiteFooter from '@/components/site/SiteFooter';
 import { brand } from '@/lib/config';
 import { publishedPosts } from '@/lib/blog';
 
@@ -30,71 +32,75 @@ export default function BlogPage() {
   const posts = publishedPosts();
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-24 sm:py-32">
-      <p className="font-display text-[11px] font-light tracking-[0.5em] text-gold uppercase">
-        {brand.town} · Garden Route · South Africa
-      </p>
-      <h1 className="foil mt-6 font-display text-4xl font-extralight tracking-wide sm:text-6xl">
-        The Daily Roach
-      </h1>
-      <p className="font-serif mt-5 text-lg font-light italic text-bone/70 sm:text-xl">
-        Notes from the circle — the craft, the culture, the quiet green corners.
-      </p>
-      <div className="rule-gold mt-8 w-40" />
+    <>
+      <SiteHeader />
+      <main className="mx-auto max-w-3xl px-6 py-16 sm:py-24">
+        <p className="font-display text-[11px] font-light tracking-[0.5em] text-gold uppercase">
+          {brand.town} · Garden Route · South Africa
+        </p>
+        <h1 className="foil mt-6 font-display text-4xl font-extralight tracking-wide sm:text-6xl">
+          The Daily Roach
+        </h1>
+        <p className="font-serif mt-5 text-lg font-light italic text-bone/70 sm:text-xl">
+          Notes from the circle — the craft, the culture, the quiet green corners.
+        </p>
+        <div className="rule-gold mt-8 w-40" />
 
-      <div className="mt-14 space-y-12">
-        {posts.map((post) => (
-          <article key={post.slug}>
-            {post.image && (
-              <Link href={`/blog/${post.slug}/`} className="mb-5 block outline-none">
-                <img
-                  src={post.image}
-                  alt=""
-                  width={1600}
-                  height={1200}
-                  loading="lazy"
-                  /* Fixed-height band so a column of posts keeps an even
-                     rhythm whatever shape each photo is. Cropping is fine
-                     HERE — it is a thumbnail, and the full frame is one
-                     click away, uncropped. */
-                  className="h-56 w-full rounded-sm object-cover opacity-90 transition-opacity duration-500 hover:opacity-100"
-                />
-              </Link>
-            )}
-            <p className="font-display text-[11px] tracking-[0.3em] text-bone/50 uppercase">
-              {new Date(post.date).toLocaleDateString('en-ZA', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              })}
-            </p>
-            <h2 className="mt-2 font-display text-2xl font-extralight tracking-wide text-bone">
+        <div className="mt-14 space-y-12">
+          {posts.map((post) => (
+            <article key={post.slug}>
+              {post.image && (
+                <Link href={`/blog/${post.slug}/`} className="mb-5 block outline-none">
+                  <img
+                    src={post.image}
+                    alt=""
+                    width={1600}
+                    height={1200}
+                    loading="lazy"
+                    /* Fixed-height band so a column of posts keeps an even
+                       rhythm whatever shape each photo is. Cropping is fine
+                       HERE — it is a thumbnail, and the full frame is one
+                       click away, uncropped. */
+                    className="h-56 w-full rounded-sm object-cover opacity-90 transition-opacity duration-500 hover:opacity-100"
+                  />
+                </Link>
+              )}
+              <p className="font-display text-[11px] tracking-[0.3em] text-bone/50 uppercase">
+                {new Date(post.date).toLocaleDateString('en-ZA', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              </p>
+              <h2 className="mt-2 font-display text-2xl font-extralight tracking-wide text-bone">
+                <Link
+                  href={`/blog/${post.slug}/`}
+                  className="outline-none transition-colors hover:text-gold-lit focus-visible:text-gold-lit"
+                >
+                  {post.title}
+                </Link>
+              </h2>
+              <p className="mt-3 text-base leading-relaxed font-light text-bone/70">{post.blurb}</p>
               <Link
                 href={`/blog/${post.slug}/`}
-                className="outline-none transition-colors hover:text-gold-lit focus-visible:text-gold-lit"
+                className="mt-3 inline-block font-display text-[11px] tracking-[0.3em] text-gold uppercase outline-none hover:text-gold-lit focus-visible:text-gold-lit"
               >
-                {post.title}
+                Read on →
               </Link>
-            </h2>
-            <p className="mt-3 text-base leading-relaxed font-light text-bone/70">{post.blurb}</p>
-            <Link
-              href={`/blog/${post.slug}/`}
-              className="mt-3 inline-block font-display text-[11px] tracking-[0.3em] text-gold uppercase outline-none hover:text-gold-lit focus-visible:text-gold-lit"
-            >
-              Read on →
-            </Link>
-          </article>
-        ))}
-      </div>
+            </article>
+          ))}
+        </div>
 
-      <footer className="mt-20 border-t hairline pt-8">
-        <Link
-          href="/choice/"
-          className="font-display text-[11px] tracking-[0.3em] text-bone/60 uppercase outline-none hover:text-gold focus-visible:text-gold"
-        >
-          ← Back to the street
-        </Link>
-      </footer>
-    </main>
+        <footer className="mt-20 border-t hairline pt-8">
+          <Link
+            href="/choice/"
+            className="font-display text-[11px] tracking-[0.3em] text-bone/60 uppercase outline-none hover:text-gold focus-visible:text-gold"
+          >
+            ← Back to the street
+          </Link>
+        </footer>
+      </main>
+      <SiteFooter />
+    </>
   );
 }

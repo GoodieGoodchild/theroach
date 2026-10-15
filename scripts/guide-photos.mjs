@@ -1,0 +1,107 @@
+/**
+ * Photos for the guide cards — `npm run guide-photos`.
+ *
+ * Every photo is from Wikimedia Commons under a licence that allows commercial
+ * use and modification: public domain, CC0, CC BY or CC BY-SA. Nothing NC or ND.
+ * The licence, author and links are read LIVE from the Commons API on every run
+ * (never typed by hand) and written to src/lib/guide-photos.ts, which the cards
+ * use to print the credit under each photo. If a file's licence ever changes
+ * to something not in ALLOWED, the run fails rather than publishing it.
+ *
+ * We crop to 3:2 for the card, which is a modification: the credit says
+ * "cropped", and CC BY-SA crops are themselves CC BY-SA (share-alike) — the
+ * credit names the licence, which is how that is honoured.
+ *
+ * Looked at, and left out on purpose: Pinnacle Point (the only good frame is
+ * mostly golf course, not the caves the card is about) and Wild Oats (a car
+ * park with identifiable passers-by). No usable photo exists on Commons for
+ * Gericke's Point, the Diepwalle big tree, Noetzie or the Keurbooms River.
+ *
+ * Places with no acceptable photo simply have none; the card shows
+ * text only. The client's own photos would beat all of these — to use one,
+ * drop it in and remove the entry here.
+ *
+ * Output is committed. Only re-run when PHOTOS changes.
+ */
+import sharp from 'sharp';
+import { writeFile, mkdir } from 'node:fs/promises';
+
+/** Card title in src/lib/guide.ts → Commons file. */
+const PHOTOS = {
+  'St Blaize Trail': 'File:Cliffs below Cape St Blaize Lighthouse ... (Photo JC PLE).jpg',
+  'Montagu Pass': 'File:Road over Keur river Bridge, Montagu Pass.jpg',
+  'Victoria Bay': 'File:Victoria Bay, near George.jpg',
+  'The transport museum': 'File:Outeniqua Transport Museum - Garden Route, South Africa (3918502693).jpg',
+  'Map of Africa': 'File:Kaaimans River ... (52689615215).jpg',
+  'Half-collared Kingfisher Trail': 'File:Touw River ... (46416538711).jpg',
+  'Canoe the Touw River': 'File:RSA-WildernessNP1.jpg',
+  'Go paragliding': 'File:Wilderness paraglide 02.jpg',
+  'The Heads at golden hour': 'File:Knysna Head West.jpg',
+  'Jubilee Creek': 'File:Jubilee Creek waterfall (40347935034).jpg',
+  'The lagoon by paddle': 'File:Knysna lagoon.jpg',
+  'Oysters on the water': 'File:Knysna Tapas & Oysters, Thesen Island, Western Cape, South Africa (20320908968).jpg',
+  'Buffalo Bay': 'File:Buffelsbaai from the air (20324288260).jpg',
+  Robberg: 'File:Bosluiskop (ZA), Robberg Nature Reserve, Küste -- 2024 -- 2202.jpg',
+  'Birds of Eden': 'File:Birds of Eden-002.jpg',
+  'Storms River Mouth': 'File:Tsitsikamma2.jpg',
+  'Nature’s Valley': "File:Nature's Valley.jpg",
+  'Bloukrans Bridge': 'File:Bloukrans Bridge2.JPG',
+};
+
+const ALLOWED = /^(public domain|cc0|cc by(-sa)? \d\.\d)/i;
+const UA = { 'User-Agent': 'theroach.co.za guide builder (contact: high@theroach.co.za)' };
+const WIDTHS = [640, 1000];
+const OUT = 'public/img/guide';
+
+const slug = (s) =>
+  s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const text = (html = '') => html.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+
+const api =
+  'https://commons.wikimedia.org/w/api.php?action=query&format=json&prop=imageinfo' +
+  '&iiprop=url|extmetadata&iiextmetadatafilter=LicenseShortName|LicenseUrl|Artist' +
+  '&iiurlwidth=1600&titles=' +
+  encodeURIComponent(Object.values(PHOTOS).join('|'));
+const { query } = await fetch(api, { headers: UA }).then((r) => r.json());
+// The API normalises titles (underscores, capitalisation) — map back.
+const norm = Object.fromEntries((query.normalized ?? []).map((n) => [n.from, n.to]));
+const pages = Object.fromEntries(Object.values(query.pages).map((p) => [p.title, p]));
+
+await mkdir(OUT, { recursive: true });
+const credits = {};
+
+for (const [place, file] of Object.entries(PHOTOS)) {
+  const page = pages[norm[file] ?? file];
+  const info = page?.imageinfo?.[0];
+  if (!info) throw new Error(`${place}: ${file} not found on Commons`);
+  const m = info.extmetadata;
+  const license = m.LicenseShortName?.value ?? '';
+  if (!ALLOWED.test(license)) throw new Error(`${place}: licence "${license}" is not allowed`);
+
+  const buf = Buffer.from(await fetch(info.thumburl, { headers: UA }).then((r) => r.arrayBuffer()));
+  const name = slug(place);
+  for (const w of WIDTHS) {
+    await sharp(buf)
+      .resize(w, Math.round((w * 2) / 3), { fit: 'cover' })
+      .webp({ quality: 72, effort: 6 })
+      .toFile(`${OUT}/${name}-${w}.webp`);
+  }
+  credits[place] = {
+    src: `/img/guide/${name}`,
+    author: text(m.Artist?.value) || 'Unknown',
+    license,
+    licenseUrl: m.LicenseUrl?.value ?? '',
+    page: info.descriptionurl,
+  };
+  console.log(`${place.padEnd(32)} ${license.padEnd(12)} ${credits[place].author}`);
+  await new Promise((s) => setTimeout(s, 400)); // be polite to Wikimedia
+}
+
+await writeFile(
+  'src/lib/guide-photos.ts',
+  `// Generated by scripts/guide-photos.mjs — do not edit by hand.\n` +
+    `// Credits are read from the Wikimedia Commons API at generation time.\n\n` +
+    `export interface Photo {\n  src: string;\n  author: string;\n  license: string;\n  licenseUrl: string;\n  page: string;\n}\n\n` +
+    `export const PHOTOS: Record<string, Photo> = ${JSON.stringify(credits, null, 2)};\n`,
+);
+console.log(`\n${Object.keys(credits).length} photos → ${OUT}/, credits → src/lib/guide-photos.ts`);

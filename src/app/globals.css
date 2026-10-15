@@ -16,6 +16,14 @@
   --color-ember-deep: #c94f14;
   --color-bone: #efe9dd;
 
+  /* The Garden Route's own colours — used ONLY as small accents on the guide
+     (category dots, verdict marks). Gold on black stays the brand. */
+  --color-moss: #9ccf8f;
+  --color-lagoon: #7fd0d6;
+  --color-mist: #b9c2cf;
+  --color-protea: #f08fa8;
+  --color-forest: #0b1710;
+
   --font-display: var(--font-montserrat);
   --font-serif: var(--font-cormorant);
   --font-body: var(--font-jost);
@@ -309,4 +317,39 @@ body {
 .prose-roach img {
   border-radius: 2px;
   margin: 2rem 0;
+}
+
+/* ── The guide (home page) ───────────────────────────────────────────────────
+ *
+ * Plain, scrolling, readable. The home page is the opposite of the film and the
+ * deck on /story/: nothing here animates in, so nothing can ship hidden.
+ */
+
+/* In-page links land below the sticky header rather than underneath it. */
+.anchor {
+  scroll-margin-top: 5.5rem;
+}
+
+/* The route rail scrolls sideways on a phone; the scrollbar is noise there. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.card {
+  border: 1px solid color-mix(in srgb, var(--color-gold) 16%, transparent);
+  background: var(--color-ink-2);
+  border-radius: 14px;
+  transition:
+    border-color 0.35s ease,
+    transform 0.35s ease,
+    background-color 0.35s ease;
+}
+a.card:hover,
+a.card:focus-visible {
+  border-color: color-mix(in srgb, var(--color-gold) 60%, transparent);
+  background: var(--color-ink-3);
+  transform: translateY(-2px);
 }

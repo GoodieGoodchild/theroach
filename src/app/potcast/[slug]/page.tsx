@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import SiteHeader from '@/components/site/SiteHeader';
+import SiteFooter from '@/components/site/SiteFooter';
 import { notFound } from 'next/navigation';
 import { brand } from '@/lib/config';
 import { show, EPISODES, episodeBySlug, publishedEpisodes } from '@/lib/potcast';
@@ -79,101 +81,105 @@ export default async function EpisodePage({ params }: { params: Promise<{ slug: 
   const listen = ep.links ?? {};
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-24 sm:py-32">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
+    <>
+      <SiteHeader />
+      <main className="mx-auto max-w-3xl px-6 py-16 sm:py-24">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
 
-      <Link
-        href="/potcast/"
-        className="font-display text-[11px] tracking-[0.3em] text-gold uppercase hover:underline"
-      >
-        ← PotCast
-      </Link>
-
-      <p className="mt-8 font-display text-[11px] tracking-[0.35em] text-gold/70 uppercase">
-        Episode {ep.number} ·{' '}
-        <time dateTime={ep.published}>
-          {new Date(ep.published + 'T00:00:00Z').toLocaleDateString('en-ZA', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-            timeZone: 'UTC',
-          })}
-        </time>
-        {ep.minutes ? ` · ${ep.minutes} min` : ''}
-      </p>
-
-      <h1 className="foil mt-4 font-display text-3xl font-extralight tracking-wide sm:text-5xl">
-        {ep.title}
-      </h1>
-
-      <div className="rule-gold mt-8 w-32" />
-
-      <p className="mt-8 text-lg font-light leading-relaxed text-bone/75">{ep.blurb}</p>
-
-      {(listen.spotify || listen.apple || listen.youtube) && (
-        <div className="mt-10 flex flex-wrap gap-3">
-          {listen.spotify && <Listen href={listen.spotify} label="Spotify" />}
-          {listen.apple && <Listen href={listen.apple} label="Apple Podcasts" />}
-          {listen.youtube && <Listen href={listen.youtube} label="YouTube" />}
-        </div>
-      )}
-
-      {ep.notes?.length ? (
-        <section className="mt-16">
-          <h2 className="font-display text-xl font-light tracking-[0.14em] text-bone uppercase">
-            In this episode
-          </h2>
-          <ul className="mt-6 space-y-3">
-            {ep.notes.map((n, i) => (
-              <li key={i} className="flex gap-4 text-base font-light leading-relaxed text-bone/70">
-                <span className="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-gold" />
-                {n}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {ep.transcript ? (
-        <section className="mt-16">
-          <h2 className="font-display text-xl font-light tracking-[0.14em] text-bone uppercase">
-            Transcript
-          </h2>
-          <div className="mt-6 space-y-4 text-base font-light leading-relaxed whitespace-pre-line text-bone/70">
-            {ep.transcript}
-          </div>
-        </section>
-      ) : null}
-
-      {others.length > 0 && (
-        <section className="mt-20 border-t hairline pt-10">
-          <h2 className="font-display text-xl font-light tracking-[0.14em] text-bone uppercase">
-            More episodes
-          </h2>
-          <ul className="mt-6 space-y-4">
-            {others.map((o) => (
-              <li key={o.slug}>
-                <Link
-                  href={`/potcast/${o.slug}/`}
-                  className="text-base font-light text-bone/70 hover:text-gold-lit"
-                >
-                  {o.number}. {o.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <nav className="mt-20 border-t hairline pt-8">
         <Link
-          href="/"
-          className="font-display text-[11px] tracking-[0.3em] text-bone/60 uppercase hover:text-gold"
+          href="/potcast/"
+          className="font-display text-[11px] tracking-[0.3em] text-gold uppercase hover:underline"
         >
-          ← The Roach — private cannabis collective, Knysna
+          ← PotCast
         </Link>
-      </nav>
-    </main>
+
+        <p className="mt-8 font-display text-[11px] tracking-[0.35em] text-gold/70 uppercase">
+          Episode {ep.number} ·{' '}
+          <time dateTime={ep.published}>
+            {new Date(ep.published + 'T00:00:00Z').toLocaleDateString('en-ZA', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+              timeZone: 'UTC',
+            })}
+          </time>
+          {ep.minutes ? ` · ${ep.minutes} min` : ''}
+        </p>
+
+        <h1 className="foil mt-4 font-display text-3xl font-extralight tracking-wide sm:text-5xl">
+          {ep.title}
+        </h1>
+
+        <div className="rule-gold mt-8 w-32" />
+
+        <p className="mt-8 text-lg font-light leading-relaxed text-bone/75">{ep.blurb}</p>
+
+        {(listen.spotify || listen.apple || listen.youtube) && (
+          <div className="mt-10 flex flex-wrap gap-3">
+            {listen.spotify && <Listen href={listen.spotify} label="Spotify" />}
+            {listen.apple && <Listen href={listen.apple} label="Apple Podcasts" />}
+            {listen.youtube && <Listen href={listen.youtube} label="YouTube" />}
+          </div>
+        )}
+
+        {ep.notes?.length ? (
+          <section className="mt-16">
+            <h2 className="font-display text-xl font-light tracking-[0.14em] text-bone uppercase">
+              In this episode
+            </h2>
+            <ul className="mt-6 space-y-3">
+              {ep.notes.map((n, i) => (
+                <li key={i} className="flex gap-4 text-base font-light leading-relaxed text-bone/70">
+                  <span className="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-gold" />
+                  {n}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {ep.transcript ? (
+          <section className="mt-16">
+            <h2 className="font-display text-xl font-light tracking-[0.14em] text-bone uppercase">
+              Transcript
+            </h2>
+            <div className="mt-6 space-y-4 text-base font-light leading-relaxed whitespace-pre-line text-bone/70">
+              {ep.transcript}
+            </div>
+          </section>
+        ) : null}
+
+        {others.length > 0 && (
+          <section className="mt-20 border-t hairline pt-10">
+            <h2 className="font-display text-xl font-light tracking-[0.14em] text-bone uppercase">
+              More episodes
+            </h2>
+            <ul className="mt-6 space-y-4">
+              {others.map((o) => (
+                <li key={o.slug}>
+                  <Link
+                    href={`/potcast/${o.slug}/`}
+                    className="text-base font-light text-bone/70 hover:text-gold-lit"
+                  >
+                    {o.number}. {o.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <nav className="mt-20 border-t hairline pt-8">
+          <Link
+            href="/"
+            className="font-display text-[11px] tracking-[0.3em] text-bone/60 uppercase hover:text-gold"
+          >
+            ← The Roach — private cannabis collective, Knysna
+          </Link>
+        </nav>
+      </main>
+      <SiteFooter />
+    </>
   );
 }
 
